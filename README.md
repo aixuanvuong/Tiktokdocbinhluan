@@ -13,11 +13,17 @@ git clone https://github.com/aixuanvuong/Tiktokdocbinhluan.git app && cd app && 
 ```
 
 > **Kịch bản `setup.sh` sẽ tự động xử lý toàn bộ từ A-Z:**
-> 1. Cập nhật hệ thống Ubuntu & cài đặt công cụ cần thiết.
-> 2. Tự động cài đặt **Node.js 20 LTS** & **PM2** (Quản lý tiến trình khởi động cùng Ubuntu).
-> 3. Cài đặt toàn bộ thư viện npm (`npm install`).
-> 4. Đóng gói ứng dụng (`npm run build`).
-> 5. Khởi chạy ứng dụng chạy ngầm trên cổng `3000` và cấu hình tự động bật lại nếu server bị khởi động lại (Reboot).
+> 1. Hỏi nhập **Tên miền của bạn** (Ví dụ: `live.yourdomain.com`). Nếu có tên miền, kịch bản sẽ **tự động cài đặt Nginx + Đăng ký SSL HTTPS miễn phí (Let's Encrypt)**. Nếu chưa có tên miền, nhấn Enter để chạy trực tiếp qua IP cổng 3000.
+> 2. Cập nhật hệ thống Ubuntu & cài đặt công cụ cần thiết.
+> 3. Tự động cài đặt **Node.js 20 LTS** & **PM2** (Quản lý tiến trình khởi động cùng Ubuntu).
+> 4. Cài đặt toàn bộ thư viện npm (`npm install`).
+> 5. Đóng gói ứng dụng (`npm run build`).
+> 6. Khởi chạy ứng dụng chạy ngầm trên cổng `3000` hoặc HTTPS tên miền của bạn và cấu hình tự động bật lại nếu server bị khởi động lại (Reboot).
+
+### 💡 Ví Dụ Chạy Tự Động Kèm Tên Miền (Không Cần Nhập Tay):
+```bash
+DOMAIN=live.yourdomain.com EMAIL=admin@yourdomain.com ./setup.sh
+```
 
 ---
 
