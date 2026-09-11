@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# 🚀 TIKTOK LIVE READER - ONE-CLICK AUTO INSTALLER WITH DOMAIN & SSL FOR UBUNTU
+# 🚀 TIKTOK LIVE READER - ONE-CLICK AUTO INSTALLER WITH DOMAIN, CLOUDFLARE & SSL
 # ==============================================================================
 set -e
 
@@ -16,8 +16,8 @@ echo -e "${CYAN}======================================================${NC}"
 
 # Ask for Domain Configuration
 if [ -z "$DOMAIN" ]; then
-    echo -e "\n${YELLOW}🌐 CẤU HÌNH TÊN MIỀN (DOMAIN NAME):${NC}"
-    echo -e "Nếu bạn đã trỏ Tên miền (VD: live.yourdomain.com) về IP Server này, hãy nhập bên dưới."
+    echo -e "\n${YELLOW}🌐 CẤU HÌNH TÊN MIỀN / CLOUDFLARE (DOMAIN NAME):${NC}"
+    echo -e "Nếu bạn kết nối tên miền từ Cloudflare (VD: live.yourdomain.com), hãy nhập bên dưới."
     echo -e "Nếu chưa có Tên miền, nhấn ${GREEN}[ENTER]${NC} để truy cập trực tiếp bằng IP qua cổng 3000."
     read -p "👉 Nhập Tên miền của bạn (hoặc nhấn Enter để bỏ qua): " DOMAIN
 fi
@@ -64,38 +64,45 @@ sudo ufw allow 3000/tcp 2>/dev/null || true
 # Get Server Public IP
 PUBLIC_IP=$(curl -s --max-time 3 ifconfig.me || curl -s --max-time 3 api.ipify.org || echo "IP_SERVER_CỦA_BẠN")
 
-# 7. Setup Domain & Nginx Reverse Proxy & SSL (If Domain provided)
+# 7. Setup Domain & Nginx Reverse Proxy with Cloudflare Headers & SSL (If Domain provided)
 DOMAIN_URL="http://${PUBLIC_IP}:3000"
 
 if [ -n "$DOMAIN" ]; then
     # Clean domain input (remove http:// or https:// or trailing slashes)
     CLEAN_DOMAIN=$(echo "$DOMAIN" | sed -e 's|^https\?://||' -e 's|/.*$||' | xargs)
     
-    echo -e "\n${YELLOW}⚙️ Đang cấu hình Nginx Reverse Proxy & SSL cho tên miền: ${GREEN}${CLEAN_DOMAIN}${NC}..."
+    echo -e "\n${YELLOW}⚙️ Đang cấu hình Nginx Reverse Proxy (Tối ưu cho Cloudflare & WebSockets) cho: ${GREEN}${CLEAN_DOMAIN}${NC}..."
     sudo apt-get install -y nginx certbot python3-certbot-nginx
 
     # Allow Port 80 & 443
     sudo ufw allow 80/tcp 2>/dev/null || true
     sudo ufw allow 443/tcp 2>/dev/null || true
 
-    # Create Nginx Config
+    # Create Nginx Config optimized for Cloudflare WebSockets
     NGINX_CONF="/etc/nginx/sites-available/tiktok-live-reader"
     sudo bash -c "cat > ${NGINX_CONF}" <<EOF
 server {
     listen 80;
     server_name ${CLEAN_DOMAIN};
 
+    # Cloudflare Real IP & WebSocket proxy configuration
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
+        
+        # Real IP headers from Cloudflare & Reverse Proxy
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header CF-Connecting-IP \$http_cf_connecting_ip;
+
+        # WebSockets timeout settings for long live streams
         proxy_read_timeout 86400s;
         proxy_send_timeout 86400s;
+        proxy_connect_timeout 60s;
     }
 }
 EOF
@@ -112,7 +119,7 @@ EOF
     fi
 
     if [ -n "$EMAIL" ]; then
-        sudo certbot --nginx -d "$CLEAN_DOMAIN" --non-interactive --agree-tos -m "$EMAIL" --redirect || echo -e "${RED}⚠️ Đăng ký SSL chưa thành công (Do tên miền chưa trỏ về IP $PUBLIC_IP). Bạn có thể đăng ký sau bằng lệnh: sudo certbot --nginx -d $CLEAN_DOMAIN${NC}"
+        sudo certbot --nginx -d "$CLEAN_DOMAIN" --non-interactive --agree-tos -m "$EMAIL" --redirect || echo -e "${RED}⚠️ Lưu ý Cloudflare: Nếu dùng Cloudflare Proxy (Đám mây cam 🟠), bạn hãy chọn chế độ SSL/TLS trong Cloudflare là 'Flexible' hoặc 'Full', hoặc đổi đám mây xám ⚪ tạm thời để Certbot cấp SSL.${NC}"
     fi
 
     DOMAIN_URL="https://${CLEAN_DOMAIN}"
@@ -128,4 +135,8 @@ echo -e "   👉 ${GREEN}${DOMAIN_URL}${NC}"
 if [ -n "$CLEAN_DOMAIN" ]; then
     echo -e "   (Hoặc qua IP trực tiếp: http://${PUBLIC_IP}:3000)"
 fi
+echo -e "\n${YELLOW}📌 Lưu ý quan trọng khi dùng Cloudflare:${NC}"
+echo -e " 1. Trên Cloudflare DNS: Trỏ bản ghi A tên miền ${GREEN}${CLEAN_DOMAIN}${NC} về IP ${GREEN}${PUBLIC_IP}${NC}"
+echo -e " 2. Trên Cloudflare SSL/TLS: Chọn chế độ ${GREEN}Flexible${NC} hoặc ${GREEN}Full${NC}"
+echo -e " 3. Trên Cloudflare Network: Bật tùy chọn ${GREEN}WebSockets = ON${NC}"
 echo -e "======================================================\n"

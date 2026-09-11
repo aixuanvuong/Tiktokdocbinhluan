@@ -27,6 +27,31 @@ DOMAIN=live.yourdomain.com EMAIL=admin@yourdomain.com ./setup.sh
 
 ---
 
+## ☁️ HƯỚNG DẪN KẾT NỐI TÊN MIỀN QUA CLOUDFLARE (3 BƯỚC ĐƠN GIẢN)
+
+Nếu bạn quản lý tên miền trên **Cloudflare**, hãy làm theo 3 bước sau để kết nối ứng dụng chạy HTTPS & WebSockets mượt mà:
+
+### Bước 1: Trỏ DNS trên Cloudflare
+1. Đăng nhập vào trang quản trị Cloudflare ➔ Chọn Tên miền của bạn ➔ Chọn **DNS** ➔ **Records**.
+2. Thêm một bản ghi **A Record**:
+   - **Type:** `A`
+   - **Name:** `live` (hoặc `@` nếu dùng tên miền chính)
+   - **IPv4 address:** `IP_SERVER_UBUNTU_CỦA_BẠN`
+   - **Proxy status:** Bật `Proxied` (Biểu tượng đám mây màu cam 🟠).
+
+### Bước 2: Bật Cấu Hình SSL/TLS & WebSockets Trên Cloudflare
+1. Vào menu **SSL/TLS** ➔ Overview: Chọn chế độ **`Flexible`** hoặc **`Full`**.
+2. Vào menu **Network**: Đảm bảo mục **`WebSockets`** đang ở trạng thái **`ON`** (Mặc định Cloudflare đã bật sẵn).
+
+### Bước 3: Chạy Lệnh Cài Đặt Trên Server Ubuntu
+Mở SSH Server Ubuntu và dán lệnh cài đặt:
+```bash
+git clone https://github.com/aixuanvuong/Tiktokdocbinhluan.git app && cd app && chmod +x setup.sh && ./setup.sh
+```
+Kịch bản `setup.sh` sẽ hỏi tên miền (ví dụ: `live.yourdomain.com`), tự động tạo cấu hình **Nginx Reverse Proxy** tối ưu chuẩn cho Cloudflare WebSockets & lấy IP thật người dùng (`CF-Connecting-IP`).
+
+---
+
 ## 🔄 CẬP NHẬT PHIÊN BẢN MỚI TRÊN SERVER (UPDATE)
 
 Sau khi bạn chỉnh sửa mã nguồn và đẩy (push) lên GitHub, để cập nhật phiên bản mới nhất trên Server Ubuntu đã cài đặt trước đó, bạn chỉ cần mở terminal Server và chạy **1 dòng lệnh duy nhất**:
