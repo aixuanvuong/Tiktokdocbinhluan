@@ -9,7 +9,7 @@
 Sau khi bạn đã **Export dự án sang GitHub** (xem hướng dẫn bên dưới), bạn chỉ cần đăng nhập vào **Ubuntu Server** qua SSH và chạy **1 dòng lệnh duy nhất**:
 
 ```bash
-git clone https://github.com/TÊN_GITHUB_CỦA_BẠN/TÊN_REPOSITORY.git app && cd app && chmod +x setup.sh && ./setup.sh
+git clone https://github.com/aixuanvuong/Tiktokdocbinhluan.git app && cd app && chmod +x setup.sh && ./setup.sh
 ```
 
 > **Kịch bản `setup.sh` sẽ tự động xử lý toàn bộ từ A-Z:**
