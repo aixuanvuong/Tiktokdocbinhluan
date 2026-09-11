@@ -125,6 +125,13 @@ EOF
     DOMAIN_URL="https://${CLEAN_DOMAIN}"
 fi
 
+# Install tiktokxv command line utility
+chmod +x tiktokxv 2>/dev/null || true
+chmod +x setup.sh 2>/dev/null || true
+chmod +x update.sh 2>/dev/null || true
+sudo cp -f tiktokxv /usr/local/bin/tiktokxv 2>/dev/null || cp -f tiktokxv /usr/local/bin/tiktokxv 2>/dev/null || true
+chmod +x /usr/local/bin/tiktokxv 2>/dev/null || true
+
 echo -e "\n${GREEN}======================================================${NC}"
 echo -e "${GREEN}🎉 CÀI ĐẶT HOÀN TẤT THÀNH CÔNG!${NC}"
 echo -e "${GREEN}======================================================${NC}"
@@ -135,8 +142,12 @@ echo -e "   👉 ${GREEN}${DOMAIN_URL}${NC}"
 if [ -n "$CLEAN_DOMAIN" ]; then
     echo -e "   (Hoặc qua IP trực tiếp: http://${PUBLIC_IP}:3000)"
 fi
-echo -e "\n${YELLOW}📌 Lưu ý quan trọng khi dùng Cloudflare:${NC}"
-echo -e " 1. Trên Cloudflare DNS: Trỏ bản ghi A tên miền ${GREEN}${CLEAN_DOMAIN}${NC} về IP ${GREEN}${PUBLIC_IP}${NC}"
-echo -e " 2. Trên Cloudflare SSL/TLS: Chọn chế độ ${GREEN}Flexible${NC} hoặc ${GREEN}Full${NC}"
-echo -e " 3. Trên Cloudflare Network: Bật tùy chọn ${GREEN}WebSockets = ON${NC}"
+echo -e "\n${CYAN}🛠️  CÔNG CỤ QUẢN LÝ LỆNH TIKTOKXV:${NC}"
+echo -e "   Từ bây giờ, bạn có thể gõ lệnh ${GREEN}tiktokxv${NC} trên Terminal để mở Menu quản lý:"
+echo -e "   • Cài đặt lại"
+echo -e "   • Kiểm tra trạng thái Server"
+echo -e "   • Kiểm tra kết nối Tên Miền / Cloudflare"
+echo -e "   • Thay đổi Tên Miền"
+echo -e "   • Cập nhật phiên bản mới"
+echo -e "   • Dừng / Khởi chạy lại Server"
 echo -e "======================================================\n"

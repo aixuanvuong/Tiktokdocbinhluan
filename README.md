@@ -27,6 +27,33 @@ DOMAIN=live.yourdomain.com EMAIL=admin@yourdomain.com ./setup.sh
 
 ---
 
+## 🛠️ LỆNH QUẢN LÝ HỆ THỐNG TRÊN TERMINAL (`tiktokxv`)
+
+Sau khi cài đặt xong, bạn có thể gõ duy nhất câu lệnh này bất cứ lúc nào trên Terminal:
+
+```bash
+tiktokxv
+```
+
+Màn hình sẽ hiển thị Menu tương tác quản lý trực quan:
+
+```text
+======================================================
+   🎵 TIKTOK LIVE READER - QUẢN LÝ HỆ THỐNG (tiktokxv)   
+======================================================
+Vui lòng chọn thao tác:
+
+  [1] 🔄 Cài đặt lại toàn bộ hệ thống (Reinstall)
+  [2] 📊 Kiểm tra trạng thái Server (Check Server Status)
+  [3] 🌐 Kiểm tra kết nối với Tên miền (Check Domain Connection)
+  [4] ✏️  Thay đổi Tên miền (Change Domain)
+  [5] 🚀 Cập nhật phiên bản mới nhất từ GitHub (Update)
+  [6] 🛑 Dừng / Khởi chạy / Restart Server (Manage Server)
+  [0] 🚪 Thoát
+```
+
+---
+
 ## ☁️ HƯỚNG DẪN KẾT NỐI TÊN MIỀN QUA CLOUDFLARE (3 BƯỚC ĐƠN GIẢN)
 
 Nếu bạn quản lý tên miền trên **Cloudflare**, hãy làm theo 3 bước sau để kết nối ứng dụng chạy HTTPS & WebSockets mượt mà:

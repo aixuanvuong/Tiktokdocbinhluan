@@ -1,0 +1,184 @@
+#!/bin/bash
+# ==============================================================================
+# 📱 TIKTOK LIVE READER - CLI MANAGEMENT TOOL (tiktokxv)
+# ==============================================================================
+
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Find app directory
+APP_DIR=""
+if [ -f "./package.json" ] && [ -f "./setup.sh" ]; then
+    APP_DIR=$(pwd)
+elif [ -d "/root/app" ]; then
+    APP_DIR="/root/app"
+elif [ -d "$HOME/app" ]; then
+    APP_DIR="$HOME/app"
+else
+    APP_DIR="/root/app"
+fi
+
+show_header() {
+    clear
+    echo -e "${CYAN}======================================================${NC}"
+    echo -e "${BOLD}${CYAN}   🎵 TIKTOK LIVE READER - QUẢN LÝ HỆ THỐNG (tiktokxv)   ${NC}"
+    echo -e "${CYAN}======================================================${NC}"
+}
+
+show_menu() {
+    show_header
+    echo -e "${YELLOW}Vui lòng chọn thao tác:${NC}\n"
+    echo -e "  ${GREEN}[1]${NC} 🔄 Cài đặt lại toàn bộ hệ thống (Reinstall)"
+    echo -e "  ${GREEN}[2]${NC} 📊 Kiểm tra trạng thái Server (Check Server Status)"
+    echo -e "  ${GREEN}[3]${NC} 🌐 Kiểm tra kết nối với Tên miền (Check Domain Connection)"
+    echo -e "  ${GREEN}[4]${NC} ✏️  Thay đổi Tên miền (Change Domain)"
+    echo -e "  ${GREEN}[5]${NC} 🚀 Cập nhật phiên bản mới nhất từ GitHub (Update)"
+    echo -e "  ${GREEN}[6]${NC} 🛑 Dừng / Khởi chạy / Restart Server (Manage Server)"
+    echo -e "  ${RED}[0]${NC} 🚪 Thoát\n"
+    echo -e "${CYAN}------------------------------------------------------${NC}"
+    read -p "👉 Nhập lựa chọn [0-6]: " choice
+    case $choice in
+        1) reinstall_app ;;
+        2) check_server_status ;;
+        3) check_domain_status ;;
+        4) change_domain ;;
+        5) update_app ;;
+        6) toggle_server ;;
+        0) echo -e "\n${GREEN}Cảm ơn bạn đã sử dụng TikTok Live Reader! Tạm biệt!${NC}\n"; exit 0 ;;
+        *) echo -e "\n${RED}Lựa chọn không hợp lệ!${NC}"; sleep 1.5; show_menu ;;
+    esac
+}
+
+reinstall_app() {
+    show_header
+    echo -e "${YELLOW}⚠️ BẠN ĐANG CHỌN CÀI ĐẶT LẠI HỆ THỐNG${NC}"
+    read -p "Bạn có chắc chắn muốn chạy lại setup.sh không? [y/N]: " confirm
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        cd "$APP_DIR" && chmod +x setup.sh && ./setup.sh
+    else
+        echo -e "${CYAN}Đã hủy thao tác.${NC}"
+    fi
+    read -p "Nhấn [Enter] để quay lại menu..."
+    show_menu
+}
+
+check_server_status() {
+    show_header
+    echo -e "${CYAN}📊 Đang kiểm tra trạng thái tiến trình PM2:${NC}\n"
+    pm2 status tiktok-live-reader || pm2 status
+    echo -e "\n${CYAN}🔌 Kiểm tra kết nối cổng nội bộ 3000 (localhost:3000):${NC}"
+    if curl -s --connect-timeout 3 http://127.0.0.1:3000 > /dev/null; then
+        echo -e "${GREEN}✅ Server Node.js đang HOẠT ĐỘNG BÌNH THƯỜNG trên cổng 3000!${NC}"
+    else
+        echo -e "${RED}❌ Server Node.js KHÔNG phản hồi trên cổng 3000!${NC}"
+    fi
+    echo -e "\n${CYAN}📜 10 dòng log mới nhất của Server:${NC}"
+    pm2 logs tiktok-live-reader --lines 10 --nostream 2>/dev/null || true
+    echo ""
+    read -p "Nhấn [Enter] để quay lại menu..."
+    show_menu
+}
+
+check_domain_status() {
+    show_header
+    echo -e "${CYAN}🌐 KIỂM TRA KẾT NỐI TÊN MIỀN & CLOUDFLARE:${NC}\n"
+    PUBLIC_IP=$(curl -s --max-time 3 ifconfig.me || curl -s --max-time 3 api.ipify.org || echo "N/A")
+    echo -e "📌 IP Server Ubuntu của bạn: ${GREEN}${PUBLIC_IP}${NC}"
+    
+    # Detect configured domain in Nginx
+    DOMAIN_NAME=""
+    if [ -f "/etc/nginx/sites-available/tiktok-live-reader" ]; then
+        DOMAIN_NAME=$(grep -E 'server_name' /etc/nginx/sites-available/tiktok-live-reader | awk '{print $2}' | tr -d ';' | head -n 1)
+    fi
+
+    if [ -n "$DOMAIN_NAME" ]; then
+        echo -e "📌 Tên miền đã cấu hình: ${GREEN}${DOMAIN_NAME}${NC}"
+        echo -e "\n👉 Đang truy vấn IP DNS của tên miền ${DOMAIN_NAME}..."
+        DOMAIN_IP=$(dig +short "$DOMAIN_NAME" 2>/dev/null | tail -n1 || host "$DOMAIN_NAME" 2>/dev/null | awk '/has address/ { print $4 }' | head -n1 || echo "")
+        if [ -n "$DOMAIN_IP" ]; then
+            echo -e "   IP DNS Trỏ về: ${CYAN}${DOMAIN_IP}${NC}"
+            if [ "$DOMAIN_IP" == "$PUBLIC_IP" ]; then
+                echo -e "   ${GREEN}✅ Tên miền đang trỏ trực tiếp về IP Server này!${NC}"
+            else
+                echo -e "   ${YELLOW}ℹ️ Tên miền đang trỏ qua Cloudflare Proxy (Đám mây cam 🟠) hoặc IP khác.${NC}"
+            fi
+        fi
+
+        echo -e "\n👉 Đang thử kết nối HTTP/HTTPS đến tên miền ${DOMAIN_NAME}..."
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "https://${DOMAIN_NAME}" 2>/dev/null || echo "000")
+        if [ "$HTTP_CODE" == "200" ] || [ "$HTTP_CODE" == "301" ] || [ "$HTTP_CODE" == "302" ]; then
+            echo -e "   ${GREEN}✅ Kết nối HTTPS thành công (Mã phản hồi: ${HTTP_CODE})!${NC}"
+        else
+            HTTP_CODE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://${DOMAIN_NAME}" 2>/dev/null || echo "000")
+            if [ "$HTTP_CODE_HTTP" == "200" ] || [ "$HTTP_CODE_HTTP" == "301" ]; then
+                echo -e "   ${GREEN}✅ Kết nối HTTP thành công (Mã phản hồi: ${HTTP_CODE_HTTP})!${NC}"
+            else
+                echo -e "   ${RED}❌ Không thể kết nối tới tên miền ${DOMAIN_NAME} (Mã phản hồi: ${HTTP_CODE})!${NC}"
+                echo -e "   ${YELLOW}Vui lòng kiểm tra lại cấu hình DNS & Proxy trên Cloudflare.${NC}"
+            fi
+        fi
+    else
+        echo -e "${YELLOW}⚠️ Chưa có tên miền nào được cấu hình qua Nginx!${NC}"
+        echo -e "Truy cập trực tiếp qua IP: ${GREEN}http://${PUBLIC_IP}:3000${NC}"
+    fi
+
+    echo ""
+    read -p "Nhấn [Enter] để quay lại menu..."
+    show_menu
+}
+
+change_domain() {
+    show_header
+    echo -e "${CYAN}✏️ THAY ĐỔI / CẤU HÌNH TÊN MIỀN MỚI:${NC}\n"
+    read -p "👉 Nhập Tên miền mới của bạn (Ví dụ: live.yourdomain.com): " NEW_DOMAIN
+    if [ -z "$NEW_DOMAIN" ]; then
+        echo -e "${RED}Tên miền không được để trống!${NC}"
+        sleep 2
+        show_menu
+        return
+    fi
+
+    read -p "👉 Nhập Email đăng ký SSL (Ví dụ: admin@gmail.com): " SSL_EMAIL
+
+    cd "$APP_DIR"
+    DOMAIN="$NEW_DOMAIN" EMAIL="$SSL_EMAIL" ./setup.sh
+
+    read -p "Nhấn [Enter] để quay lại menu..."
+    show_menu
+}
+
+update_app() {
+    show_header
+    echo -e "${CYAN}🚀 ĐANG CẬP NHẬT PHIÊN BẢN MỚI TỪ GITHUB:${NC}\n"
+    cd "$APP_DIR" && chmod +x update.sh && ./update.sh
+    read -p "Nhấn [Enter] để quay lại menu..."
+    show_menu
+}
+
+toggle_server() {
+    show_header
+    echo -e "${CYAN}🛑 QUẢN LÝ TRẠNG THÁI SERVER:${NC}\n"
+    echo -e "  ${GREEN}[1]${NC} 🔄 Khởi động lại Server (Restart)"
+    echo -e "  ${RED}[2]${NC} 🛑 Dừng Server (Stop)"
+    echo -e "  ${GREEN}[3]${NC} ▶️  Khởi chạy Server (Start)"
+    echo -e "  ${CYAN}[4]${NC} 📜 Xem Logs thời gian thực (Live Logs)"
+    echo -e "  ${YELLOW}[0]${NC} ⬅️  Quay lại menu chính\n"
+    read -p "👉 Nhập lựa chọn [0-4]: " s_choice
+    case $s_choice in
+        1) pm2 restart tiktok-live-reader; echo -e "${GREEN}✅ Đã khởi động lại Server!${NC}" ;;
+        2) pm2 stop tiktok-live-reader; echo -e "${YELLOW}🛑 Đã dừng Server!${NC}" ;;
+        3) pm2 start dist/server.cjs --name "tiktok-live-reader" || pm2 restart tiktok-live-reader; echo -e "${GREEN}✅ Đã bật Server!${NC}" ;;
+        4) pm2 logs tiktok-live-reader ;;
+        0) show_menu ;;
+        *) echo -e "${RED}Lựa chọn không hợp lệ!${NC}" ;;
+    esac
+    read -p "Nhấn [Enter] để quay lại menu..."
+    show_menu
+}
+
+# Start CLI loop
+show_menu

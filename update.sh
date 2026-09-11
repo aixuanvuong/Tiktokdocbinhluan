@@ -30,9 +30,17 @@ npm run build
 echo -e "\n${YELLOW}👉 [4/4] Đang khởi động lại dịch vụ với PM2...${NC}"
 pm2 restart tiktok-live-reader || pm2 start dist/server.cjs --name "tiktok-live-reader"
 
+# Install or update tiktokxv CLI
+chmod +x tiktokxv 2>/dev/null || true
+chmod +x setup.sh 2>/dev/null || true
+chmod +x update.sh 2>/dev/null || true
+sudo cp -f tiktokxv /usr/local/bin/tiktokxv 2>/dev/null || cp -f tiktokxv /usr/local/bin/tiktokxv 2>/dev/null || true
+chmod +x /usr/local/bin/tiktokxv 2>/dev/null || true
+
 echo -e "\n${GREEN}======================================================${NC}"
 echo -e "${GREEN}🎉 CẬP NHẬT PHIÊN BẢN MỚI THÀNH CÔNG!${NC}"
 echo -e "${GREEN}======================================================${NC}"
 echo -e "${CYAN}📊 Trạng thái dịch vụ PM2:${NC}"
 pm2 status
+echo -e "\n${CYAN}💡 Lệnh quản lý:${NC} Bạn có thể gõ ${GREEN}tiktokxv${NC} để mở Menu quản lý."
 echo -e "======================================================\n"
