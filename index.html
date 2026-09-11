@@ -177,27 +177,6 @@
           </div>
         </div>
 
-        <!-- Secondary Actions -->
-        <div class="flex items-center space-x-3 justify-end">
-          <button 
-            id="btn-simulate" 
-            onclick="toggleSimulation()" 
-            class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-sm font-semibold flex items-center space-x-2 transition-all active:scale-95"
-            title="Chạy luồng sự kiện giả lập để thử giọng đọc ngay"
-          >
-            <i data-lucide="play-circle" class="w-4 h-4 text-purple-400"></i>
-            <span id="text-simulate">Chạy Giả Lập Test</span>
-          </button>
-
-          <button 
-            onclick="toggleProxyModal()" 
-            class="p-3 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-xl transition-all" 
-            title="Cấu hình Proxy Server"
-          >
-            <i data-lucide="settings-2" class="w-4 h-4"></i>
-          </button>
-        </div>
-
       </div>
 
       <!-- Saved TikTok IDs Quick Bar (User Private Space) -->
@@ -448,7 +427,7 @@
           <ul class="list-disc list-inside space-y-1 text-slate-300 font-medium pl-1">
             <li>Hãy mở ứng dụng TikTok trên điện thoại, tìm một phòng Live đang hoạt động thực tế.</li>
             <li>Sao chép chính xác ID của chủ phòng Live (ví dụ: <span class="text-cyan-400">@user123</span>) và dán vào ô nhập.</li>
-            <li>Bấm nút <strong class="text-purple-400">"Chạy Giả Lập Test"</strong> để thử nghiệm tính năng phát âm thanh ngay lập tức mà không cần chờ kênh thật Live.</li>
+            <li>Bấm nút <strong class="text-cyan-400">"Thử Đọc Giọng Nói"</strong> ở bảng Cấu hình âm thanh để kiểm tra âm thanh trình duyệt.</li>
           </ul>
         </div>
 
@@ -677,44 +656,139 @@
     </div>
   </div>
 
-  <!-- PROXY & SERVER CONFIG MODAL -->
-  <div id="modal-proxy" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="font-bold text-slate-200 text-sm flex items-center space-x-2">
-          <i data-lucide="server" class="w-4 h-4 text-cyan-400"></i>
-          <span>Cấu Hình TikTok Live Proxy Server</span>
-        </h3>
-        <button onclick="toggleProxyModal()" class="text-slate-400 hover:text-slate-200">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
+  <!-- UNIFIED SETTINGS MODAL (Account Profile, Password Change & TikTok Live Proxy Config) -->
+  <div id="modal-settings" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeSettingsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
 
-      <div class="space-y-3 text-xs">
+      <!-- Modal Header -->
+      <div class="flex items-center space-x-3 border-b border-slate-800 pb-3.5">
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </div>
         <div>
-          <label class="block font-semibold text-slate-300 mb-1">Chọn Máy Chủ Proxy:</label>
-          <select id="select-proxy-preset" onchange="applyProxyPreset()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-cyan-500">
-            <option value="auto">Tự động (Ưu tiên Server Hiện Tại / Zerody Public)</option>
-            <option value="https://tiktok-chat-reader.zerody.one">Zerody WebSocket Proxy (Public)</option>
-            <option value="custom">Tùy chỉnh URL Proxy riêng...</option>
-          </select>
-        </div>
-
-        <div id="custom-proxy-container" class="hidden space-y-2">
-          <label class="block font-semibold text-slate-300">Địa chỉ WebSocket Proxy tùy chỉnh:</label>
-          <input 
-            type="text" 
-            id="input-proxy-url" 
-            value="" 
-            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-cyan-500"
-            placeholder="https://my-tiktok-proxy.com"
-          />
+          <h3 class="text-base font-bold text-slate-100">Cài Đặt Hệ Thống & Tài Khoản</h3>
+          <p class="text-xs text-slate-400">Thay đổi tên hiển thị, mật khẩu và cấu hình Proxy TikTok Live</p>
         </div>
       </div>
 
-      <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="toggleProxyModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-700">Hủy</button>
-        <button onclick="saveProxySettings()" class="px-4 py-2 bg-cyan-500 text-slate-950 rounded-xl text-xs font-bold hover:bg-cyan-400">Lưu Cấu Hình</button>
+      <!-- SECTION 1: ACCOUNT PROFILE & PASSWORD CHANGE -->
+      <div class="space-y-3.5 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs">
+        <div class="flex items-center space-x-2 text-cyan-400 font-bold text-sm border-b border-slate-800/80 pb-2">
+          <i data-lucide="user-cog" class="w-4 h-4"></i>
+          <span>1. Thông Tin Tài Khoản & Mật Khẩu</span>
+        </div>
+
+        <div id="settings-profile-msg" class="hidden p-2.5 rounded-lg text-xs font-medium"></div>
+
+        <form onsubmit="handleUpdateProfileSubmit(event)" class="space-y-3">
+          <div>
+            <label class="block font-semibold text-slate-400 mb-1">Tên đăng nhập (User ID):</label>
+            <input 
+              type="text" 
+              id="settings-username" 
+              disabled 
+              value="" 
+              class="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-2.5 text-cyan-400 font-bold text-xs cursor-not-allowed"
+            />
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Tên hiển thị mới:</label>
+            <input 
+              type="text" 
+              id="settings-displayname" 
+              required
+              placeholder="Nhập tên hiển thị mới" 
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-cyan-500 text-xs font-medium"
+            />
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 space-y-2.5">
+            <span class="block font-bold text-slate-300 text-[11px] uppercase tracking-wider text-slate-400">Đổi mật khẩu (Bỏ trống nếu không đổi):</span>
+            
+            <div>
+              <label class="block font-medium text-slate-400 mb-1">Mật khẩu hiện tại:</label>
+              <input 
+                type="password" 
+                id="settings-current-password" 
+                placeholder="••••••••" 
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-cyan-500 text-xs"
+              />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block font-medium text-slate-400 mb-1">Mật khẩu mới:</label>
+                <input 
+                  type="password" 
+                  id="settings-new-password" 
+                  placeholder="Mật khẩu mới" 
+                  class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-cyan-500 text-xs"
+                />
+              </div>
+
+              <div>
+                <label class="block font-medium text-slate-400 mb-1">Nhập lại mật khẩu mới:</label>
+                <input 
+                  type="password" 
+                  id="settings-confirm-new-password" 
+                  placeholder="Xác nhận MK mới" 
+                  class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-cyan-500 text-xs"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-md shadow-cyan-500/20 active:scale-95 mt-1"
+          >
+            Lưu Thay Đổi Tài Khoản
+          </button>
+        </form>
+      </div>
+
+      <!-- SECTION 2: TIKTOK LIVE PROXY SERVER CONFIG -->
+      <div class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs">
+        <div class="flex items-center space-x-2 text-purple-400 font-bold text-sm border-b border-slate-800/80 pb-2">
+          <i data-lucide="server" class="w-4 h-4"></i>
+          <span>2. Cấu Hình TikTok Live Proxy Server</span>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Chọn Máy Chủ Proxy:</label>
+            <select id="select-proxy-preset" onchange="applyProxyPreset()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-purple-500 text-xs">
+              <option value="auto">Tự động (Ưu tiên Server Hiện Tại / Zerody Public)</option>
+              <option value="https://tiktok-chat-reader.zerody.one">Zerody WebSocket Proxy (Public)</option>
+              <option value="custom">Tùy chỉnh URL Proxy riêng...</option>
+            </select>
+          </div>
+
+          <div id="custom-proxy-container" class="hidden space-y-1.5">
+            <label class="block font-semibold text-slate-300">Địa chỉ WebSocket Proxy tùy chỉnh:</label>
+            <input 
+              type="text" 
+              id="input-proxy-url" 
+              value="" 
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-purple-500 text-xs"
+              placeholder="https://my-tiktok-proxy.com"
+            />
+          </div>
+
+          <button onclick="saveProxySettings()" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs transition shadow-md shadow-purple-500/20 active:scale-95">
+            Lưu Cấu Hình Proxy
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-1 text-right">
+        <button onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-700">
+          Đóng
+        </button>
       </div>
     </div>
   </div>
@@ -1571,10 +1645,50 @@
     function clearSpeechQueue() { ttsQueue.clear(); }
 
     /* ==========================================================================
-       8. MODAL & PROXY CONFIG
+       8. MODAL & UNIFIED SETTINGS CONFIG
        ========================================================================== */
+    function openSettingsModal() {
+      if (!currentUser) {
+        alert('Vui lòng Đăng nhập để sử dụng tính năng cài đặt tài khoản!');
+        openLoginModal();
+        return;
+      }
+
+      document.getElementById('settings-username').value = '@' + currentUser.username;
+      document.getElementById('settings-displayname').value = currentUser.displayName;
+      document.getElementById('settings-current-password').value = '';
+      document.getElementById('settings-new-password').value = '';
+      document.getElementById('settings-confirm-new-password').value = '';
+
+      const msgEl = document.getElementById('settings-profile-msg');
+      if (msgEl) msgEl.classList.add('hidden');
+
+      // Sync proxy preset select
+      const presetSelect = document.getElementById('select-proxy-preset');
+      const customContainer = document.getElementById('custom-proxy-container');
+      const inputUrl = document.getElementById('input-proxy-url');
+
+      if (!state.proxyUrl) {
+        presetSelect.value = 'auto';
+        customContainer.classList.add('hidden');
+      } else if (state.proxyUrl === 'https://tiktok-chat-reader.zerody.one') {
+        presetSelect.value = 'https://tiktok-chat-reader.zerody.one';
+        customContainer.classList.add('hidden');
+      } else {
+        presetSelect.value = 'custom';
+        inputUrl.value = state.proxyUrl;
+        customContainer.classList.remove('hidden');
+      }
+
+      document.getElementById('modal-settings').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('modal-settings').classList.add('hidden');
+    }
+
     function toggleProxyModal() {
-      document.getElementById('modal-proxy').classList.toggle('hidden');
+      openSettingsModal();
     }
 
     function applyProxyPreset() {
@@ -1599,8 +1713,77 @@
       }
 
       localStorage.setItem('tiktok_proxy_url', state.proxyUrl);
-      toggleProxyModal();
-      alert('Đã lưu cấu hình Proxy mới!');
+      alert('Đã lưu cấu hình Proxy TikTok Live thành công!');
+    }
+
+    async function handleUpdateProfileSubmit(e) {
+      e.preventDefault();
+      const msgEl = document.getElementById('settings-profile-msg');
+      if (!msgEl) return;
+      msgEl.className = 'hidden p-2.5 rounded-lg text-xs font-medium';
+
+      const newDisplayName = document.getElementById('settings-displayname').value.trim();
+      const currentPassword = document.getElementById('settings-current-password').value;
+      const newPassword = document.getElementById('settings-new-password').value;
+      const confirmNewPassword = document.getElementById('settings-confirm-new-password').value;
+
+      if (newPassword || confirmNewPassword) {
+        if (!currentPassword) {
+          msgEl.innerText = 'Vui lòng nhập Mật khẩu hiện tại để xác nhận đổi Mật khẩu mới!';
+          msgEl.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-500/40 text-rose-300';
+          msgEl.classList.remove('hidden');
+          return;
+        }
+
+        if (newPassword !== confirmNewPassword) {
+          msgEl.innerText = 'Nhập lại Mật khẩu mới không trùng khớp!';
+          msgEl.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-500/40 text-rose-300';
+          msgEl.classList.remove('hidden');
+          return;
+        }
+
+        if (newPassword.length < 4) {
+          msgEl.innerText = 'Mật khẩu mới phải từ 4 ký tự trở lên!';
+          msgEl.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-500/40 text-rose-300';
+          msgEl.classList.remove('hidden');
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch('/api/user/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: JSON.stringify({
+            displayName: newDisplayName,
+            currentPassword: currentPassword || undefined,
+            newPassword: newPassword || undefined
+          })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          currentUser = data.user;
+          renderAuthUI();
+          msgEl.innerText = '✅ Cập nhật tên hiển thị và mật khẩu thành công!';
+          msgEl.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-950/60 border border-emerald-500/40 text-emerald-300';
+          msgEl.classList.remove('hidden');
+          document.getElementById('settings-current-password').value = '';
+          document.getElementById('settings-new-password').value = '';
+          document.getElementById('settings-confirm-new-password').value = '';
+        } else {
+          msgEl.innerText = data.error || 'Không thể cập nhật thông tin.';
+          msgEl.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-500/40 text-rose-300';
+          msgEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        msgEl.innerText = 'Lỗi kết nối máy chủ.';
+        msgEl.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-950/60 border border-rose-500/40 text-rose-300';
+        msgEl.classList.remove('hidden');
+      }
     }
 
     /* ==========================================================================
@@ -1705,12 +1888,19 @@
               <span class="text-slate-400 font-medium">(@${currentUser.username})</span>
               ${isAdmin ? '<span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">Admin</span>' : ''}
             </div>
+            
+            <button onclick="openSettingsModal()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95" title="Cài đặt tài khoản & Proxy TikTok Live">
+              <i data-lucide="settings" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span class="hidden sm:inline">Cài Đặt</span>
+            </button>
+
             ${isAdmin ? `
               <button onclick="openAdminModal()" class="px-2.5 py-1.5 bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-300 rounded-lg text-xs font-bold flex items-center space-x-1 transition shadow-sm">
                 <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                <span>Quản Lý Admin</span>
+                <span class="hidden md:inline">Quản Lý Admin</span>
               </button>
             ` : ''}
+
             <button onclick="logoutUser()" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 border border-slate-700 rounded-lg text-xs font-semibold transition" title="Đăng xuất">
               <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
             </button>

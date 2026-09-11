@@ -304,6 +304,67 @@ async function startServer() {
     }
   });
 
+  // 5. Update Profile & Change Password
+  app.post('/api/user/profile', authMiddleware, (req: any, res) => {
+    try {
+      const { displayName, currentPassword, newPassword } = req.body || {};
+      const users = getUsers();
+      const uIndex = users.findIndex(u => u.username.toLowerCase() === req.user.username.toLowerCase());
+      
+      if (uIndex === -1) {
+        return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+      }
+
+      const user = users[uIndex];
+
+      // Update Display Name if provided
+      if (displayName && typeof displayName === 'string') {
+        const cleanName = displayName.trim();
+        if (cleanName.length > 0) {
+          user.displayName = cleanName;
+        }
+      }
+
+      // Change Password if newPassword provided
+      if (newPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({ error: 'Vui lòng nhập mật khẩu hiện tại để thay đổi mật khẩu mới.' });
+        }
+
+        const currentHash = hashPassword(currentPassword, user.salt);
+        if (currentHash !== user.passwordHash) {
+          return res.status(400).json({ error: 'Mật khẩu hiện tại không chính xác.' });
+        }
+
+        if (typeof newPassword !== 'string' || newPassword.length < 4) {
+          return res.status(400).json({ error: 'Mật khẩu mới phải từ 4 ký tự trở lên.' });
+        }
+
+        const newSalt = crypto.randomBytes(16).toString('hex');
+        const newHash = hashPassword(newPassword, newSalt);
+        user.salt = newSalt;
+        user.passwordHash = newHash;
+      }
+
+      saveUsers(users);
+
+      res.json({
+        success: true,
+        message: 'Cập nhật thông tin thành công!',
+        user: {
+          username: user.username,
+          displayName: user.displayName,
+          role: user.role,
+          status: user.status,
+          savedTikTokIds: user.savedTikTokIds
+        }
+      });
+    } catch (err: any) {
+      console.error('Update profile error:', err);
+      res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật thông tin.' });
+    }
+  });
+
   // --- ADMIN ROUTES ---
 
   // 1. Get all users (Admin only)
