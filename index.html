@@ -113,7 +113,28 @@
   </header>
 
   <!-- Main Container -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6 relative">
+
+    <!-- Mandatory Auth Gate Banner (Visible when not logged in) -->
+    <div id="auth-gate-overlay" class="hidden bg-gradient-to-r from-cyan-950/90 via-slate-900 to-purple-950/90 border-2 border-cyan-500/50 rounded-2xl p-6 shadow-2xl space-y-3 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto">
+        <i data-lucide="lock" class="w-6 h-6"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-100">Yêu Cầu Đăng Nhập Dịch Vụ</h2>
+      <p class="text-xs text-slate-300 max-w-xl mx-auto leading-relaxed">
+        Bạn cần **Đăng Nhập** hoặc **Tạo Tài Khoản Mới** để có thể kết nối TikTok Live, đọc bình luận, nghe follow bằng giọng nói Tiếng Việt và lưu không gian TikTok ID cá nhân.
+      </p>
+      <div class="pt-2 flex items-center justify-center space-x-3">
+        <button onclick="openLoginModal()" class="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs flex items-center space-x-2 transition shadow-lg shadow-cyan-500/20 active:scale-95">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Đăng Nhập Ngay</span>
+        </button>
+        <button onclick="openRegisterModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition active:scale-95">
+          <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i>
+          <span>Đăng Ký Tài Khoản</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Top Control Bar (TikTok ID Input & Actions) -->
     <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
@@ -1118,6 +1139,12 @@
        4. TIKTOK LIVE REALTIME WEBSOCKET CONNECTOR
        ========================================================================== */
     function toggleConnection() {
+      if (!currentUser) {
+        alert('⚠️ Yêu cầu đăng nhập: Bạn cần Đăng nhập hoặc Tạo tài khoản mới để sử dụng dịch vụ TikTok XV!');
+        openLoginModal();
+        return;
+      }
+
       if (state.isConnected) {
         disconnectTikTokLive();
       } else {
@@ -1265,6 +1292,12 @@
     ];
 
     function toggleSimulation() {
+      if (!currentUser) {
+        alert('⚠️ Yêu cầu đăng nhập: Bạn cần Đăng nhập hoặc Tạo tài khoản mới để sử dụng dịch vụ TikTok XV!');
+        openLoginModal();
+        return;
+      }
+
       if (state.isSimulating) stopSimulation();
       else startSimulation();
     }
@@ -1589,18 +1622,26 @@
     }
 
     function openLoginModal() {
-      closeAuthModals();
+      closeAuthModals(true);
       document.getElementById('login-error').classList.add('hidden');
       document.getElementById('modal-login').classList.remove('hidden');
     }
 
     function openRegisterModal() {
-      closeAuthModals();
+      closeAuthModals(true);
       document.getElementById('register-error').classList.add('hidden');
       document.getElementById('modal-register').classList.remove('hidden');
     }
 
-    function closeAuthModals() {
+    function closeAuthModals(force = false) {
+      if (!currentUser && !force) {
+        const errEl = document.getElementById('login-error');
+        if (errEl) {
+          errEl.innerText = '⚠️ Bạn phải Đăng nhập hoặc Tạo tài khoản mới để tiếp tục!';
+          errEl.classList.remove('hidden');
+        }
+        return;
+      }
       document.getElementById('modal-login').classList.add('hidden');
       document.getElementById('modal-register').classList.add('hidden');
     }
@@ -1647,10 +1688,14 @@
     function renderAuthUI() {
       const container = document.getElementById('auth-container');
       const savedList = document.getElementById('saved-ids-list');
+      const gateOverlay = document.getElementById('auth-gate-overlay');
 
       if (!container) return;
 
       if (currentUser) {
+        if (gateOverlay) gateOverlay.classList.add('hidden');
+        closeAuthModals(true);
+
         const isAdmin = currentUser.role === 'admin';
         container.innerHTML = `
           <div class="flex items-center space-x-2">
@@ -1689,6 +1734,8 @@
           }
         }
       } else {
+        if (gateOverlay) gateOverlay.classList.remove('hidden');
+
         container.innerHTML = `
           <button onclick="openLoginModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition">
             <i data-lucide="log-in" class="w-3.5 h-3.5 text-cyan-400"></i>
@@ -1703,6 +1750,9 @@
         if (savedList) {
           savedList.innerHTML = `<span class="text-slate-500 italic">💡 Đăng nhập tài khoản để lưu sẵn danh sách TikTok ID kết nối nhanh không cần nhập thủ công.</span>`;
         }
+
+        // Auto prompt login modal on initial load when unauthenticated
+        openLoginModal();
       }
 
       lucide.createIcons();
