@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TikTok Live Voice Reader - Đọc Bình Luận & Follow Bằng Giọng Nói</title>
+  <meta name="description" content="Ứng dụng đọc bình luận và lượt follow từ TikTok Live bằng giọng nói Tiếng Việt (Text-to-Speech) 100% Client-side." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            tiktok: {
+              pink: '#ff0050',
+              cyan: '#00f2fe',
+              dark: '#0f172a',
+              card: '#1e293b',
+              border: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Socket.IO Client CDN for TikTok Live Proxy Connection -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <style>
+    /* Custom Scrollbar for Event Feed */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00f2fe;
+    }
+
+    /* Pulse animation for Live status */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(255, 0, 80, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(0, 242, 254, 0.6); }
+    }
+    .live-glow {
+      animation: pulse-glow 2s infinite;
+    }
+
+    input[type=range] {
+      accent-color: #00f2fe;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col antialiased">
+
+  <!-- Header Section -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#ff0050] to-[#00f2fe] p-0.5 live-glow flex items-center justify-center">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+            <i data-lucide="radio" class="w-5 h-5 text-cyan-400 animate-pulse"></i>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+            TikTok Live Voice Reader
+          </h1>
+          <p class="text-xs text-slate-400">Đọc bình luận & Follow bằng giọng nói (Text-to-Speech Tiếng Việt)</p>
+        </div>
+      </div>
+
+      <!-- Global Status Badges -->
+      <div class="flex items-center space-x-3">
+        <!-- Autoplay Audio Status -->
+        <button id="btn-unlock-audio" onclick="unlockAudio()" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border transition-all duration-200 bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20">
+          <i id="icon-audio-status" data-lucide="volume-x" class="w-4 h-4"></i>
+          <span id="text-audio-status">Âm thanh chưa kích hoạt (Bấm để bật)</span>
+        </button>
+
+        <!-- Connection Status Badge -->
+        <div id="connection-badge" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border border-slate-700 bg-slate-800 text-slate-400">
+          <span id="status-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span id="status-text">Chưa kết nối</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+
+    <!-- Top Control Bar (TikTok ID Input & Actions) -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        
+        <!-- TikTok Username Input -->
+        <div class="flex-1 flex items-center space-x-3">
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold">
+              @
+            </div>
+            <input 
+              type="text" 
+              id="input-tiktok-id" 
+              placeholder="Nhập TikTok ID (VD: bonglan_live, thachthanhbinh...)" 
+              class="w-full pl-8 pr-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm font-medium transition-all"
+            />
+          </div>
+
+          <!-- Connect Button -->
+          <button 
+            id="btn-connect" 
+            onclick="toggleConnection()" 
+            class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition-all whitespace-nowrap active:scale-95"
+          >
+            <i id="icon-connect" data-lucide="plug" class="w-4 h-4"></i>
+            <span id="text-connect">Kết Nối Live</span>
+          </button>
+        </div>
+
+        <!-- Secondary Actions -->
+        <div class="flex items-center space-x-3 justify-end">
+          <button 
+            id="btn-simulate" 
+            onclick="toggleSimulation()" 
+            class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-sm font-semibold flex items-center space-x-2 transition-all active:scale-95"
+            title="Chạy luồng sự kiện giả lập để thử giọng đọc ngay"
+          >
+            <i data-lucide="play-circle" class="w-4 h-4 text-purple-400"></i>
+            <span id="text-simulate">Chạy Giả Lập Test</span>
+          </button>
+
+          <button 
+            onclick="toggleProxyModal()" 
+            class="p-3 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-xl transition-all" 
+            title="Cấu hình Proxy Server"
+          >
+            <i data-lucide="settings-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Diagnostic Banner for Connection Failures -->
+      <div id="diagnostic-box" class="hidden p-3.5 bg-rose-950/40 border border-rose-500/30 rounded-xl text-xs space-y-1.5">
+        <div class="flex items-center space-x-2 text-rose-400 font-bold">
+          <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+          <span id="diag-title">Lỗi kết nối TikTok Live</span>
+        </div>
+        <p id="diag-msg" class="text-slate-300 leading-relaxed"></p>
+        <div class="pt-1 flex flex-wrap items-center gap-2">
+          <span class="text-slate-400">Gợi ý khắc phục:</span>
+          <button onclick="toggleSimulation()" class="px-2.5 py-1 bg-purple-950 border border-purple-500/40 text-purple-300 rounded-lg hover:bg-purple-900 font-semibold">
+            Bật Chạy Giả Lập ngay
+          </button>
+          <button onclick="toggleProxyModal()" class="px-2.5 py-1 bg-slate-800 border border-slate-700 text-cyan-300 rounded-lg hover:bg-slate-700 font-semibold">
+            Đổi Server Proxy
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Dashboard Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT COLUMN: Live Event Feed (7 Cols) -->
+      <section class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5 flex flex-col h-[650px] shadow-xl">
+        
+        <!-- Feed Header & Filters -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="message-square" class="w-5 h-5 text-cyan-400"></i>
+            <h2 class="font-bold text-slate-200 text-base">Luồng Sự Kiện Live</h2>
+            <span id="event-counter" class="bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full text-xs font-semibold">0</span>
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="flex items-center space-x-2">
+            <div class="bg-slate-950 p-1 rounded-xl flex space-x-1 border border-slate-800 text-xs">
+              <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1 rounded-lg font-medium transition bg-slate-800 text-cyan-400">Tất cả</button>
+              <button onclick="setFilter('chat')" id="filter-chat" class="px-3 py-1 rounded-lg font-medium transition text-slate-400 hover:text-slate-200">Bình luận</button>
+              <button onclick="setFilter('follow')" id="filter-follow" class="px-3 py-1 rounded-lg font-medium transition text-slate-400 hover:text-slate-200">Follow</button>
+            </div>
+
+            <button onclick="clearEventLog()" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition" title="Xóa nhật ký">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Event Stream List -->
+        <div id="event-feed" class="flex-1 overflow-y-auto py-4 space-y-3 pr-1">
+          <!-- Empty State -->
+          <div id="empty-feed-state" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+            <div class="w-16 h-16 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center mb-3">
+              <i data-lucide="activity" class="w-8 h-8 text-slate-600"></i>
+            </div>
+            <p class="text-sm font-medium text-slate-400">Chưa có sự kiện nào từ TikTok Live</p>
+            <p class="text-xs text-slate-600 max-w-xs mt-1">Hãy chắc chắn rằng tài khoản TikTok bạn nhập <strong class="text-slate-400">ĐANG PHÁT LIVESTREAM THỰC TẾ</strong> lúc này, hoặc bấm <strong class="text-purple-400">"Chạy Giả Lập Test"</strong> để xem thử ngay.</p>
+          </div>
+        </div>
+
+        <!-- Feed Footer Options -->
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <label class="flex items-center space-x-2 cursor-pointer select-none">
+            <input type="checkbox" id="autoscroll-toggle" checked class="rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500 w-4 h-4" />
+            <span>Tự động cuộn xuống cuối</span>
+          </label>
+          <span id="live-indicator" class="text-slate-500 italic">Sẵn sàng kết nối</span>
+        </div>
+
+      </section>
+
+      <!-- RIGHT COLUMN: Voice Speech Controls & Statistics (5 Cols) -->
+      <section class="lg:col-span-5 space-y-6">
+
+        <!-- Stats Overview Cards -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 text-center shadow-lg">
+            <p class="text-xs text-slate-400 font-medium">Bình Luận</p>
+            <p id="stat-chats" class="text-2xl font-black text-cyan-400 mt-1">0</p>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 text-center shadow-lg">
+            <p class="text-xs text-slate-400 font-medium">Lượt Follow</p>
+            <p id="stat-follows" class="text-2xl font-black text-pink-400 mt-1">0</p>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 text-center shadow-lg">
+            <p class="text-xs text-slate-400 font-medium">Hàng Đợi Đọc</p>
+            <p id="stat-queue" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+          </div>
+        </div>
+
+        <!-- Text-to-Speech Settings Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="volume-2" class="w-5 h-5 text-emerald-400"></i>
+              <h2 class="font-bold text-slate-200 text-base">Cấu Hình Giọng Đọc (TTS)</h2>
+            </div>
+            <span id="tts-status-indicator" class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+              Sẵn sàng
+            </span>
+          </div>
+
+          <!-- Select Voice Dropdown -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+              <span>Chọn Giọng Đọc (Ưu tiên vi-VN)</span>
+              <button onclick="reloadVoices()" class="text-cyan-400 hover:text-cyan-300 text-[11px] underline">Tải lại giọng</button>
+            </label>
+            <select id="voice-select" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-cyan-500 font-medium">
+              <option value="">Đang tải danh sách giọng đọc...</option>
+            </select>
+          </div>
+
+          <!-- Voice Sliders -->
+          <div class="space-y-4 pt-1">
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400 font-medium">Tốc độ đọc (Rate)</span>
+                <span id="val-rate" class="text-cyan-400 font-bold">1.0x</span>
+              </div>
+              <input type="range" id="slider-rate" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateTTSConfig()" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer" />
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400 font-medium">Cao độ (Pitch)</span>
+                <span id="val-pitch" class="text-cyan-400 font-bold">1.0</span>
+              </div>
+              <input type="range" id="slider-pitch" min="0.5" max="1.5" step="0.1" value="1.0" oninput="updateTTSConfig()" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer" />
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400 font-medium">Âm lượng (Volume)</span>
+                <span id="val-volume" class="text-cyan-400 font-bold">100%</span>
+              </div>
+              <input type="range" id="slider-volume" min="0" max="1" step="0.05" value="1" oninput="updateTTSConfig()" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer" />
+            </div>
+          </div>
+
+          <!-- Event Filter & Template Controls -->
+          <div class="space-y-3 pt-2 border-t border-slate-800">
+            <p class="text-xs font-semibold text-slate-300">Mẫu định dạng đọc bình luận:</p>
+            
+            <select id="select-chat-template" onchange="updateTTSConfig()" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-cyan-500 font-medium">
+              <option value="noi">Mẫu 1: [Tên] nói [Nội dung] (Khuyên dùng)</option>
+              <option value="binhluan">Mẫu 2: [Tên] bình luận [Nội dung]</option>
+              <option value="phay">Mẫu 3: [Tên], [Nội dung]</option>
+              <option value="noidung">Mẫu 4: Chỉ đọc [Nội dung bình luận]</option>
+            </select>
+
+            <label class="flex items-center justify-between p-2.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+              <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-read-chat" checked class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500 w-4 h-4" />
+                <span class="text-xs text-slate-200 font-medium">Bật Đọc Bình Luận</span>
+              </div>
+              <span class="text-[11px] text-cyan-400 italic">Chat Live</span>
+            </label>
+
+            <label class="flex items-center justify-between p-2.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+              <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-read-follow" checked class="rounded border-slate-700 bg-slate-900 text-pink-500 focus:ring-pink-500 w-4 h-4" />
+                <span class="text-xs text-slate-200 font-medium">Bật Đọc Lượt Follow</span>
+              </div>
+              <span class="text-[11px] text-pink-400 italic">Cảm ơn [Tên] đã follow</span>
+            </label>
+          </div>
+
+          <!-- Blacklist Configuration Card -->
+          <div class="space-y-2.5 pt-3 border-t border-slate-800">
+            <div class="flex items-center justify-between">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="toggle-blacklist-enabled" checked onchange="updateBlacklistConfig()" class="rounded border-slate-700 bg-slate-900 text-rose-500 focus:ring-rose-500 w-4 h-4" />
+                <span class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                  <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+                  <span>Lọc Từ Cấm & Tài Khoản (Blacklist)</span>
+                </span>
+              </label>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-[11px] font-semibold text-slate-400">
+                Từ khóa cấm đọc (phân cách bằng dấu phẩy):
+              </label>
+              <textarea id="input-blacklist-words" rows="2" oninput="updateBlacklistConfig()" placeholder="Ví dụ: quảng cáo, zalo, sđt, cờ bạc, ib..." class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-rose-500 font-mono resize-none"></textarea>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-[11px] font-semibold text-slate-400">
+                Tên tài khoản cấm đọc (phân cách bằng dấu phẩy):
+              </label>
+              <input type="text" id="input-blacklist-users" oninput="updateBlacklistConfig()" placeholder="Ví dụ: spambot123, baduser..." class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-rose-500 font-mono" />
+            </div>
+          </div>
+
+          <!-- TTS Control Buttons -->
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <button onclick="testSpeech()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-400 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i>
+              <span>Thử Giọng Đọc</span>
+            </button>
+
+            <button onclick="clearSpeechQueue()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-rose-400 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition">
+              <i data-lucide="square" class="w-3.5 h-3.5"></i>
+              <span>Dừng & Xóa Queue</span>
+            </button>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- Troubleshooting Guide -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-xl space-y-4">
+      <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+        <i data-lucide="help-circle" class="w-5 h-5 text-amber-400"></i>
+        <h2 class="font-bold text-slate-200 text-base">Tại Sao Kết Nối Thất Bại & Cách Khắc Phục Lỗi TikTok Live</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-300 leading-relaxed">
+        
+        <!-- Guide 1: Channel Not Live -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+          <h3 class="font-bold text-amber-400 text-sm flex items-center space-x-2">
+            <i data-lucide="video-off" class="w-4 h-4"></i>
+            <span>1. Kênh TikTok không mở Livestream (Offline)</span>
+          </h3>
+          <p class="text-slate-400">
+            Nguyên nhân số 1 khiến không kết nối được là do tài khoản TikTok bạn nhập <strong class="text-rose-400">ĐANG KHÔNG LIVESTREAM</strong> lúc này.
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-slate-300 font-medium pl-1">
+            <li>Hãy mở ứng dụng TikTok trên điện thoại, tìm một phòng Live đang hoạt động thực tế.</li>
+            <li>Sao chép chính xác ID của chủ phòng Live (ví dụ: <span class="text-cyan-400">@user123</span>) và dán vào ô nhập.</li>
+            <li>Bấm nút <strong class="text-purple-400">"Chạy Giả Lập Test"</strong> để thử nghiệm tính năng phát âm thanh ngay lập tức mà không cần chờ kênh thật Live.</li>
+          </ul>
+        </div>
+
+        <!-- Guide 2: Autoplay & CORS -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+          <h3 class="font-bold text-cyan-400 text-sm flex items-center space-x-2">
+            <i data-lucide="volume-x" class="w-4 h-4"></i>
+            <span>2. Trình duyệt chặn âm thanh (Autoplay) & CORS Proxy</span>
+          </h3>
+          <p class="text-slate-400">
+            Chrome chặn phát âm thanh tự động nếu trang web chưa được nhấp chuột tương tác.
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-slate-300 font-medium pl-1">
+            <li>Nhấp vào nút <strong class="text-amber-400">"Âm thanh chưa kích hoạt (Bấm để bật)"</strong> ở góc trên bên phải.</li>
+            <li>Khi dùng file `index.html` độc lập, nếu các Proxy public quá tải, bạn có thể bấm biểu tượng ⚙️ (Cấu hình) để chọn server proxy dự phòng.</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+    <p>TikTok Live Voice Reader &copy; 2026 • Standalone Single HTML Application</p>
+  </footer>
+
+  <!-- PROXY & SERVER CONFIG MODAL -->
+  <div id="modal-proxy" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-200 text-sm flex items-center space-x-2">
+          <i data-lucide="server" class="w-4 h-4 text-cyan-400"></i>
+          <span>Cấu Hình TikTok Live Proxy Server</span>
+        </h3>
+        <button onclick="toggleProxyModal()" class="text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Chọn Máy Chủ Proxy:</label>
+          <select id="select-proxy-preset" onchange="applyProxyPreset()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-cyan-500">
+            <option value="auto">Tự động (Ưu tiên Server Hiện Tại / Zerody Public)</option>
+            <option value="https://tiktok-chat-reader.zerody.one">Zerody WebSocket Proxy (Public)</option>
+            <option value="custom">Tùy chỉnh URL Proxy riêng...</option>
+          </select>
+        </div>
+
+        <div id="custom-proxy-container" class="hidden space-y-2">
+          <label class="block font-semibold text-slate-300">Địa chỉ WebSocket Proxy tùy chỉnh:</label>
+          <input 
+            type="text" 
+            id="input-proxy-url" 
+            value="" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-cyan-500"
+            placeholder="https://my-tiktok-proxy.com"
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="toggleProxyModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-700">Hủy</button>
+        <button onclick="saveProxySettings()" class="px-4 py-2 bg-cyan-500 text-slate-950 rounded-xl text-xs font-bold hover:bg-cyan-400">Lưu Cấu Hình</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT ENGINE -->
+  <script>
+    /* ==========================================================================
+       1. GLOBAL STATE & TTS QUEUE ARCHITECTURE
+       ========================================================================== */
+    const state = {
+      isConnected: false,
+      isSimulating: false,
+      socket: null,
+      simulationInterval: null,
+      events: [],
+      stats: { chats: 0, follows: 0, total: 0 },
+      filter: 'all',
+      audioUnlocked: false,
+      proxyUrl: localStorage.getItem('tiktok_proxy_url') || '',
+      
+      tts: {
+        voice: null,
+        useOnlineTTS: true,
+        rate: 1.0,
+        pitch: 1.0,
+        volume: 1.0,
+        readChat: true,
+        readFollow: true,
+        chatTemplate: 'noi'
+      },
+
+      blacklist: {
+        enabled: localStorage.getItem('tiktok_bl_enabled') !== 'false',
+        words: localStorage.getItem('tiktok_bl_words') ?? 'quảng cáo, zalo, sđt, cờ bạc, http, .com',
+        users: localStorage.getItem('tiktok_bl_users') ?? ''
+      }
+    };
+
+    /**
+     * Blacklist Helper Functions
+     */
+    function isBlacklistedUser(username) {
+      if (!state.blacklist.enabled || !state.blacklist.users) return false;
+      const bannedUsers = state.blacklist.users.split(',').map(u => u.trim().toLowerCase()).filter(Boolean);
+      if (bannedUsers.length === 0) return false;
+      const cleanUser = (username || '').toLowerCase();
+      return bannedUsers.some(banned => cleanUser.includes(banned));
+    }
+
+    function containsBlacklistedWord(text) {
+      if (!state.blacklist.enabled || !state.blacklist.words) return false;
+      const bannedWords = state.blacklist.words.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+      if (bannedWords.length === 0) return false;
+      const cleanText = (text || '').toLowerCase();
+      return bannedWords.some(banned => cleanText.includes(banned));
+    }
+
+    /**
+     * Sanitizes text for TTS playback. Removes colons, semicolons, and emojis
+     * that cause Google Translate TTS / SpeechSynthesis to break or cut off prematurely.
+     */
+    function sanitizeForTTS(text) {
+      if (!text) return '';
+      let clean = typeof text.normalize === 'function' ? text.normalize('NFKD') : text;
+      return clean
+        .replace(/[:;"'@#_]/g, ' ')
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    /**
+     * Speech Queue Manager
+     * Supports both Online Google Translate TTS (ultra-reliable MP3) and Web Speech API (Local voices)
+     * Includes automatic watchdog reset and error fallback.
+     */
+    class SpeechQueueManager {
+      constructor() {
+        this.queue = [];
+        this.isSpeaking = false;
+        this.synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+        this.currentAudio = null;
+        this.speakTimeout = null;
+        this.startWatchdog();
+      }
+
+      enqueue(type, username, content) {
+        // Blacklist check: Skip reading if user or content is in blacklist
+        if (state.blacklist.enabled) {
+          if (isBlacklistedUser(username)) {
+            console.log(`[Blacklist TTS] Bỏ qua tài khoản trong danh sách đen: ${username}`);
+            return;
+          }
+          if (type === 'chat' && containsBlacklistedWord(content)) {
+            console.log(`[Blacklist TTS] Bỏ qua bình luận chứa từ cấm: "${content}"`);
+            return;
+          }
+        }
+
+        let textToSpeak = '';
+
+        if (type === 'chat' && state.tts.readChat) {
+          const rawComment = content ? content.trim() : '';
+          const cleanComment = sanitizeForTTS(rawComment) || 'gửi nhãn dán';
+          const cleanName = sanitizeForTTS(username) || 'Người dùng';
+
+          const template = state.tts.chatTemplate || 'noi';
+          if (template === 'binhluan') {
+            textToSpeak = `${cleanName} bình luận ${cleanComment}`;
+          } else if (template === 'phay') {
+            textToSpeak = `${cleanName}, ${cleanComment}`;
+          } else if (template === 'noidung') {
+            textToSpeak = cleanComment;
+          } else {
+            textToSpeak = `${cleanName} nói ${cleanComment}`;
+          }
+        } else if (type === 'follow' && state.tts.readFollow) {
+          const cleanName = sanitizeForTTS(username) || 'Người dùng';
+          textToSpeak = `Cảm ơn ${cleanName} đã follow`;
+        }
+
+        if (!textToSpeak) return;
+
+        this.queue.push({
+          id: Date.now() + Math.random(),
+          text: textToSpeak,
+          type: type
+        });
+
+        this.updateQueueUI();
+        this.processNext();
+      }
+
+      processNext() {
+        if (this.isSpeaking || this.queue.length === 0) return;
+
+        const item = this.queue.shift();
+        this.updateQueueUI();
+
+        this.isSpeaking = true;
+        updateTTSStatusUI('Đang đọc...', 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20');
+
+        // Check whether to use Online Google Voice or Local Browser Voice
+        const useOnline = state.tts.useOnlineTTS || !state.tts.voice;
+
+        if (useOnline) {
+          this.speakOnline(item.text);
+        } else {
+          this.speakLocal(item.text);
+        }
+      }
+
+      speakOnline(text) {
+        // Truncate to 180 chars for Google Translate TTS API limit
+        const shortText = text.length > 180 ? text.substring(0, 180) + '...' : text;
+        const encodedText = encodeURIComponent(shortText);
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=vi&client=tw-ob`;
+
+        if (this.currentAudio) {
+          try {
+            this.currentAudio.pause();
+            this.currentAudio = null;
+          } catch (e) {}
+        }
+
+        let finished = false;
+        const done = () => {
+          if (finished) return;
+          finished = true;
+          if (this.speakTimeout) clearTimeout(this.speakTimeout);
+          this.isSpeaking = false;
+          this.currentAudio = null;
+          updateTTSStatusUI('Sẵn sàng', 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20');
+          setTimeout(() => this.processNext(), 100);
+        };
+
+        try {
+          const audio = new Audio(url);
+          audio.playbackRate = Math.min(Math.max(state.tts.rate, 0.8), 1.5);
+          audio.volume = state.tts.volume;
+          this.currentAudio = audio;
+
+          audio.onended = done;
+          audio.onerror = (e) => {
+            console.warn('Online Google TTS error, falling back to local speech:', e);
+            this.speakLocal(shortText);
+          };
+
+          // Safety timeout 10 seconds
+          this.speakTimeout = setTimeout(() => {
+            if (!finished) {
+              console.warn('Online TTS playback timeout');
+              done();
+            }
+          }, 10000);
+
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(err => {
+              console.warn('Audio play blocked or failed, falling back:', err);
+              this.speakLocal(shortText);
+            });
+          }
+        } catch (err) {
+          console.error('speakOnline exception:', err);
+          this.speakLocal(shortText);
+        }
+      }
+
+      speakLocal(text) {
+        if (!this.synth) {
+          this.isSpeaking = false;
+          setTimeout(() => this.processNext(), 100);
+          return;
+        }
+
+        let finished = false;
+        const done = () => {
+          if (finished) return;
+          finished = true;
+          if (this.speakTimeout) clearTimeout(this.speakTimeout);
+          this.isSpeaking = false;
+          updateTTSStatusUI('Sẵn sàng', 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20');
+          setTimeout(() => this.processNext(), 100);
+        };
+
+        try {
+          if (this.synth.paused) this.synth.resume();
+          this.synth.cancel(); // Clear any hung speech queue
+
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = state.tts.rate;
+          utterance.pitch = state.tts.pitch;
+          utterance.volume = state.tts.volume;
+          utterance.lang = 'vi-VN';
+
+          if (state.tts.voice) {
+            utterance.voice = state.tts.voice;
+          }
+
+          utterance.onstart = () => {
+            this.isSpeaking = true;
+          };
+
+          utterance.onend = done;
+
+          utterance.onerror = (e) => {
+            console.warn('Local speech error:', e);
+            done();
+          };
+
+          // Chrome SpeechSynthesis hanging guard
+          this.speakTimeout = setTimeout(() => {
+            if (!finished) {
+              console.warn('Local speech safety timeout');
+              if (this.synth) this.synth.cancel();
+              done();
+            }
+          }, 8000);
+
+          this.synth.speak(utterance);
+        } catch (err) {
+          console.error('speakLocal exception:', err);
+          done();
+        }
+      }
+
+      clear() {
+        this.queue = [];
+        if (this.currentAudio) {
+          try { this.currentAudio.pause(); } catch (e) {}
+          this.currentAudio = null;
+        }
+        if (this.synth) {
+          try { this.synth.cancel(); } catch (e) {}
+        }
+        if (this.speakTimeout) clearTimeout(this.speakTimeout);
+        this.isSpeaking = false;
+        this.updateQueueUI();
+        updateTTSStatusUI('Sẵn sàng', 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20');
+      }
+
+      updateQueueUI() {
+        const countEl = document.getElementById('stat-queue');
+        if (countEl) countEl.innerText = this.queue.length;
+      }
+
+      startWatchdog() {
+        setInterval(() => {
+          // If stuck for over 12 seconds speaking without finishing, reset
+          if (this.isSpeaking && !this.currentAudio && this.synth && !this.synth.speaking) {
+            this.isSpeaking = false;
+            this.processNext();
+          }
+        }, 2000);
+      }
+    }
+
+    const ttsQueue = new SpeechQueueManager();
+
+    /* ==========================================================================
+       2. WEB SPEECH API & ONLINE TTS VOICE SELECTION (VIETNAMESE)
+       ========================================================================== */
+    function getVietnameseVoice() {
+      if (!window.speechSynthesis) return null;
+      const voices = window.speechSynthesis.getVoices() || [];
+      
+      return voices.find(v => 
+        v.lang === 'vi-VN' || 
+        v.lang === 'vi_VN' || 
+        v.lang.toLowerCase().includes('vi') ||
+        v.name.toLowerCase().includes('vietnam') ||
+        v.name.toLowerCase().includes('vietnamese')
+      ) || null;
+    }
+
+    function populateVoices() {
+      const voiceSelect = document.getElementById('voice-select');
+      if (!voiceSelect) return;
+
+      voiceSelect.innerHTML = '';
+
+      // Google Translate Online Vietnamese Voice (High priority default)
+      const optOnline = document.createElement('option');
+      optOnline.value = 'online_google_vi';
+      optOnline.innerText = '⭐ Google Tiếng Việt (Online - Giọng Nữ Chuẩn & Mượt)';
+      voiceSelect.appendChild(optOnline);
+
+      let voices = [];
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        voices = window.speechSynthesis.getVoices() || [];
+      }
+
+      const viVoices = voices.filter(v => v.lang.toLowerCase().includes('vi') || v.name.toLowerCase().includes('vietnam'));
+      const otherVoices = voices.filter(v => !v.lang.toLowerCase().includes('vi') && !v.name.toLowerCase().includes('vietnam'));
+
+      if (viVoices.length > 0) {
+        const optGroupVi = document.createElement('optgroup');
+        optGroupVi.label = "Giọng Tiếng Việt Cục Bộ (Máy tính/Điện thoại)";
+        viVoices.forEach(voice => {
+          const opt = document.createElement('option');
+          opt.value = voice.name;
+          opt.innerText = `${voice.name} (${voice.lang})`;
+          optGroupVi.appendChild(opt);
+        });
+        voiceSelect.appendChild(optGroupVi);
+      }
+
+      if (otherVoices.length > 0) {
+        const optGroupOther = document.createElement('optgroup');
+        optGroupOther.label = "Giọng Cục Bộ Khác";
+        otherVoices.forEach(voice => {
+          const opt = document.createElement('option');
+          opt.value = voice.name;
+          opt.innerText = `${voice.name} (${voice.lang})`;
+          optGroupOther.appendChild(opt);
+        });
+        voiceSelect.appendChild(optGroupOther);
+      }
+
+      voiceSelect.value = 'online_google_vi';
+      state.tts.useOnlineTTS = true;
+      state.tts.voice = null;
+
+      voiceSelect.onchange = () => {
+        const selectedVal = voiceSelect.value;
+        if (selectedVal === 'online_google_vi') {
+          state.tts.useOnlineTTS = true;
+          state.tts.voice = null;
+        } else {
+          state.tts.useOnlineTTS = false;
+          const found = voices.find(v => v.name === selectedVal);
+          if (found) state.tts.voice = found;
+        }
+      };
+    }
+
+    function reloadVoices() { populateVoices(); }
+
+    if (typeof speechSynthesis !== 'undefined') {
+      speechSynthesis.onvoiceschanged = populateVoices;
+    }
+
+    /* ==========================================================================
+       3. AUTOPLAY UNLOCKER
+       ========================================================================== */
+    function unlockAudio() {
+      if (state.audioUnlocked) return;
+
+      try {
+        // Unlock HTML5 Audio
+        const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
+        silentAudio.play().catch(() => {});
+
+        // Unlock SpeechSynthesis without empty string crash
+        if ('speechSynthesis' in window && window.speechSynthesis) {
+          window.speechSynthesis.resume();
+          const dummyUtterance = new SpeechSynthesisUtterance('a');
+          dummyUtterance.volume = 0.01;
+          window.speechSynthesis.speak(dummyUtterance);
+        }
+      } catch (e) {
+        console.warn('Unlock audio exception:', e);
+      }
+
+      state.audioUnlocked = true;
+
+      const btnUnlock = document.getElementById('btn-unlock-audio');
+      const iconStatus = document.getElementById('icon-audio-status');
+      const textStatus = document.getElementById('text-audio-status');
+
+      if (btnUnlock) btnUnlock.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border transition-all duration-200 bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
+      if (textStatus) textStatus.innerText = "Giọng đọc đã kích hoạt";
+      
+      if (iconStatus) {
+        iconStatus.setAttribute('data-lucide', 'volume-2');
+        lucide.createIcons();
+      }
+    }
+
+    /* ==========================================================================
+       4. TIKTOK LIVE REALTIME WEBSOCKET CONNECTOR
+       ========================================================================== */
+    function toggleConnection() {
+      if (state.isConnected) {
+        disconnectTikTokLive();
+      } else {
+        const usernameInput = document.getElementById('input-tiktok-id').value.trim();
+        if (!usernameInput) {
+          alert('Vui lòng nhập TikTok Unique ID (Ví dụ: bonglan_live)');
+          return;
+        }
+        connectTikTokLive(usernameInput);
+      }
+    }
+
+    function hideDiagnostic() {
+      document.getElementById('diagnostic-box').classList.add('hidden');
+    }
+
+    function showDiagnostic(msg) {
+      const box = document.getElementById('diagnostic-box');
+      const msgEl = document.getElementById('diag-msg');
+      msgEl.innerText = msg;
+      box.classList.remove('hidden');
+    }
+
+    function getTargetServerUrl() {
+      if (state.proxyUrl) return state.proxyUrl;
+      // Auto detect current server location or fallback public zerody proxy
+      if (window.location.origin.startsWith('http')) {
+        return window.location.origin;
+      }
+      return 'https://tiktok-chat-reader.zerody.one';
+    }
+
+    function connectTikTokLive(username) {
+      unlockAudio();
+      hideDiagnostic();
+
+      const cleanUsername = username.replace(/^@/, '').replace(/\s+/g, '').trim();
+      updateConnectionUI('connecting', `Đang kết nối tới @${cleanUsername}...`);
+
+      try {
+        if (typeof io === 'undefined') {
+          throw new Error('Socket.IO CDN chưa được tải. Hãy kiểm tra kết nối Internet.');
+        }
+
+        const serverUrl = getTargetServerUrl();
+        console.log('Connecting via Socket.IO server:', serverUrl);
+
+        state.socket = io(serverUrl, {
+          transports: ['websocket', 'polling'],
+          reconnection: false,
+          timeout: 12000
+        });
+
+        state.socket.on('connect', () => {
+          state.socket.emit('setUniqueId', cleanUsername);
+        });
+
+        state.socket.on('connected', (data) => {
+          state.isConnected = true;
+          hideDiagnostic();
+          updateConnectionUI('connected', `Đang Live: @${cleanUsername}`);
+          addEventToLog('system', 'Hệ thống', `Đã kết nối thành công tới phòng Live của @${cleanUsername}`);
+        });
+
+        // Chat Event
+        state.socket.on('chat', (data) => {
+          const username = data.nickname || data.uniqueId || 'Người dùng';
+          const comment = data.comment || '';
+          
+          state.stats.chats++;
+          updateStatsUI();
+
+          addEventToLog('chat', username, comment, data.profilePictureUrl);
+          ttsQueue.enqueue('chat', username, comment);
+        });
+
+        // Follow Event
+        state.socket.on('follow', (data) => {
+          const username = data.nickname || data.uniqueId || 'Người dùng';
+          
+          state.stats.follows++;
+          updateStatsUI();
+
+          addEventToLog('follow', username, 'Đã theo dõi kênh', data.profilePictureUrl);
+          ttsQueue.enqueue('follow', username, '');
+        });
+
+        state.socket.on('streamEnd', () => {
+          addEventToLog('system', 'Hệ thống', 'Luồng Livestream đã kết thúc.');
+          showDiagnostic(`Tài khoản @${cleanUsername} đã tắt Live hoặc vừa kết thúc livestream.`);
+          disconnectTikTokLive();
+        });
+
+        state.socket.on('tiktok_error', (errMsg) => {
+          console.error('TikTok Live error:', errMsg);
+          updateConnectionUI('error', 'Không kết nối được');
+          addEventToLog('system', 'Lỗi TikTok Live', errMsg);
+          showDiagnostic(errMsg);
+          disconnectTikTokLive();
+        });
+
+        state.socket.on('connect_error', (err) => {
+          console.error('Socket error:', err);
+          const errMsg = typeof err === 'string' ? err : (err.message || 'Lỗi kết nối Socket.IO Proxy');
+          updateConnectionUI('error', 'Không kết nối được');
+          addEventToLog('system', 'Lỗi Server Socket', errMsg);
+          showDiagnostic(errMsg);
+          disconnectTikTokLive();
+        });
+
+        state.socket.on('disconnect', () => {
+          if (state.isConnected) {
+            updateConnectionUI('disconnected', 'Đã ngắt kết nối');
+          }
+        });
+
+      } catch (err) {
+        console.error('Exception:', err);
+        updateConnectionUI('disconnected', 'Lỗi kết nối');
+        showDiagnostic(err.message || 'Lỗi khởi tạo Socket.IO');
+      }
+    }
+
+    function disconnectTikTokLive() {
+      if (state.socket) {
+        state.socket.disconnect();
+        state.socket = null;
+      }
+      state.isConnected = false;
+      updateConnectionUI('disconnected', 'Chưa kết nối');
+      addEventToLog('system', 'Hệ thống', 'Đã ngắt kết nối khỏi TikTok Live.');
+    }
+
+    /* ==========================================================================
+       5. SIMULATION MODE
+       ========================================================================== */
+    const sampleUsers = ['Thu Hà', 'Minh Tuấn', 'Ngọc Ánh', 'Hoàng Nam', 'Bích Phương', 'Thành Long', 'Hải Yến', 'Quang Huy'];
+    const sampleComments = [
+      'Chào shop nha, áo này còn màu đen không ạ?',
+      'Cho mình xin giá sản phẩm với shop ơi!',
+      'Shop tư vấn chiều cao 1m65 nặng 55kg mặc size gì ạ?',
+      'Đã đặt hàng rồi nha shop!',
+      'Giao hàng về Hà Nội mất mấy ngày vậy ạ?',
+      'Sản phẩm đẹp quá mọi người ơi nên mua nha'
+    ];
+
+    function toggleSimulation() {
+      if (state.isSimulating) stopSimulation();
+      else startSimulation();
+    }
+
+    function startSimulation() {
+      unlockAudio();
+      hideDiagnostic();
+      state.isSimulating = true;
+
+      const btnSimulate = document.getElementById('btn-simulate');
+      const textSimulate = document.getElementById('text-simulate');
+
+      btnSimulate.className = "px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white border border-purple-400 rounded-xl text-sm font-semibold flex items-center space-x-2 transition-all shadow-lg shadow-purple-500/20";
+      textSimulate.innerText = "Dừng Giả Lập";
+
+      updateConnectionUI('simulation', 'Đang Giả Lập Live');
+      addEventToLog('system', 'Hệ thống', 'Đã bật chế độ Giả lập luồng sự kiện TikTok Live.');
+
+      state.simulationInterval = setInterval(() => {
+        const isFollow = Math.random() < 0.25;
+        const randomUser = sampleUsers[Math.floor(Math.random() * sampleUsers.length)];
+
+        if (isFollow) {
+          state.stats.follows++;
+          updateStatsUI();
+          addEventToLog('follow', randomUser, 'Đã theo dõi kênh');
+          ttsQueue.enqueue('follow', randomUser, '');
+        } else {
+          const randomComment = sampleComments[Math.floor(Math.random() * sampleComments.length)];
+          state.stats.chats++;
+          updateStatsUI();
+          addEventToLog('chat', randomUser, randomComment);
+          ttsQueue.enqueue('chat', randomUser, randomComment);
+        }
+      }, 3500);
+    }
+
+    function stopSimulation() {
+      if (state.simulationInterval) {
+        clearInterval(state.simulationInterval);
+        state.simulationInterval = null;
+      }
+      state.isSimulating = false;
+
+      const btnSimulate = document.getElementById('btn-simulate');
+      const textSimulate = document.getElementById('text-simulate');
+
+      btnSimulate.className = "px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-sm font-semibold flex items-center space-x-2 transition-all active:scale-95";
+      textSimulate.innerText = "Chạy Giả Lập Test";
+
+      if (!state.isConnected) updateConnectionUI('disconnected', 'Chưa kết nối');
+      addEventToLog('system', 'Hệ thống', 'Đã dừng chế độ Giả lập.');
+    }
+
+    /* ==========================================================================
+       6. UI RENDERERS
+       ========================================================================== */
+    function addEventToLog(type, username, content, avatarUrl = '') {
+      const feed = document.getElementById('event-feed');
+      const emptyState = document.getElementById('empty-feed-state');
+
+      if (emptyState) emptyState.remove();
+
+      state.stats.total++;
+      document.getElementById('event-counter').innerText = state.stats.total;
+
+      const eventItem = document.createElement('div');
+      eventItem.dataset.type = type;
+
+      if (state.filter !== 'all' && state.filter !== type && type !== 'system') {
+        eventItem.classList.add('hidden');
+      }
+
+      let badgeHTML = '';
+      let borderClass = 'border-slate-800 bg-slate-950/60';
+
+      if (type === 'chat') {
+        badgeHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">💬 Bình luận</span>`;
+      } else if (type === 'follow') {
+        badgeHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-500/10 text-pink-400 border border-pink-500/20">➕ Follow</span>`;
+        borderClass = 'border-pink-500/20 bg-pink-950/10';
+      } else {
+        badgeHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">⚙ System</span>`;
+      }
+
+      const defaultAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`;
+      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      eventItem.className = `p-3 rounded-xl border ${borderClass} flex items-start space-x-3 transition-all duration-300 transform translate-y-1`;
+      
+      eventItem.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0 overflow-hidden mt-0.5">
+          <img src="${avatarUrl || defaultAvatar}" alt="${username}" class="w-full h-full object-cover" onerror="this.src='${defaultAvatar}'" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-xs text-slate-200 truncate">${username}</span>
+              ${badgeHTML}
+            </div>
+            <span class="text-[10px] text-slate-500">${timeStr}</span>
+          </div>
+          <p class="text-xs text-slate-300 break-words leading-relaxed">${content}</p>
+        </div>
+      `;
+
+      feed.appendChild(eventItem);
+
+      if (document.getElementById('autoscroll-toggle').checked) {
+        feed.scrollTop = feed.scrollHeight;
+      }
+    }
+
+    function setFilter(filterType) {
+      state.filter = filterType;
+
+      const btnAll = document.getElementById('filter-all');
+      const btnChat = document.getElementById('filter-chat');
+      const btnFollow = document.getElementById('filter-follow');
+
+      [btnAll, btnChat, btnFollow].forEach(btn => {
+        btn.className = "px-3 py-1 rounded-lg font-medium transition text-slate-400 hover:text-slate-200";
+      });
+
+      if (filterType === 'all') btnAll.className = "px-3 py-1 rounded-lg font-medium transition bg-slate-800 text-cyan-400";
+      if (filterType === 'chat') btnChat.className = "px-3 py-1 rounded-lg font-medium transition bg-slate-800 text-cyan-400";
+      if (filterType === 'follow') btnFollow.className = "px-3 py-1 rounded-lg font-medium transition bg-slate-800 text-pink-400";
+
+      const items = document.querySelectorAll('#event-feed > div[data-type]');
+      items.forEach(item => {
+        const itemType = item.dataset.type;
+        if (filterType === 'all' || itemType === 'system' || itemType === filterType) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    }
+
+    function clearEventLog() {
+      const feed = document.getElementById('event-feed');
+      feed.innerHTML = `
+        <div id="empty-feed-state" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+          <div class="w-16 h-16 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center mb-3">
+            <i data-lucide="activity" class="w-8 h-8 text-slate-600"></i>
+          </div>
+          <p class="text-sm font-medium text-slate-400">Đã xóa nhật ký sự kiện</p>
+        </div>
+      `;
+      lucide.createIcons();
+      state.stats.total = 0;
+      document.getElementById('event-counter').innerText = 0;
+    }
+
+    function updateStatsUI() {
+      document.getElementById('stat-chats').innerText = state.stats.chats;
+      document.getElementById('stat-follows').innerText = state.stats.follows;
+    }
+
+    function updateConnectionUI(status, message) {
+      const btnConnect = document.getElementById('btn-connect');
+      const iconConnect = document.getElementById('icon-connect');
+      const textConnect = document.getElementById('text-connect');
+      const badge = document.getElementById('connection-badge');
+      const dot = document.getElementById('status-dot');
+      const textStatus = document.getElementById('status-text');
+      const liveIndicator = document.getElementById('live-indicator');
+
+      if (status === 'connected') {
+        badge.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+        textStatus.innerText = message;
+        liveIndicator.innerText = message;
+        liveIndicator.className = "text-emerald-400 font-semibold";
+
+        btnConnect.className = "px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-rose-600/20 flex items-center space-x-2 transition-all whitespace-nowrap active:scale-95";
+        textConnect.innerText = "Ngắt Kết Nối";
+        if (iconConnect) iconConnect.setAttribute('data-lucide', 'unplug');
+      } else if (status === 'connecting') {
+        badge.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border border-amber-500/30 bg-amber-500/10 text-amber-400";
+        dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+        textStatus.innerText = message;
+        liveIndicator.innerText = message;
+        textConnect.innerText = "Đang kết nối...";
+      } else if (status === 'simulation') {
+        badge.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border border-purple-500/30 bg-purple-500/10 text-purple-400";
+        dot.className = "w-2 h-2 rounded-full bg-purple-400 animate-pulse";
+        textStatus.innerText = "Đang Giả Lập";
+        liveIndicator.innerText = "Đang chạy luồng sự kiện giả lập";
+      } else {
+        badge.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border border-slate-700 bg-slate-800 text-slate-400";
+        dot.className = "w-2 h-2 rounded-full bg-slate-500";
+        textStatus.innerText = "Chưa kết nối";
+        liveIndicator.innerText = "Sẵn sàng kết nối";
+        liveIndicator.className = "text-slate-500 italic";
+
+        btnConnect.className = "px-6 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition-all whitespace-nowrap active:scale-95";
+        textConnect.innerText = "Kết Nối Live";
+        if (iconConnect) iconConnect.setAttribute('data-lucide', 'plug');
+      }
+
+      lucide.createIcons();
+    }
+
+    function updateTTSStatusUI(text, classNames) {
+      const el = document.getElementById('tts-status-indicator');
+      if (el) {
+        el.innerText = text;
+        el.className = `text-xs px-2.5 py-1 rounded-full font-medium border ${classNames}`;
+      }
+    }
+
+    /* ==========================================================================
+       7. TTS CONTROLS & EVENT HANDLERS
+       ========================================================================== */
+    function updateTTSConfig() {
+      const rateVal = parseFloat(document.getElementById('slider-rate').value);
+      const pitchVal = parseFloat(document.getElementById('slider-pitch').value);
+      const volVal = parseFloat(document.getElementById('slider-volume').value);
+
+      state.tts.rate = rateVal;
+      state.tts.pitch = pitchVal;
+      state.tts.volume = volVal;
+
+      document.getElementById('val-rate').innerText = rateVal.toFixed(1) + 'x';
+      document.getElementById('val-pitch').innerText = pitchVal.toFixed(1);
+      document.getElementById('val-volume').innerText = Math.round(volVal * 100) + '%';
+
+      state.tts.readChat = document.getElementById('toggle-read-chat').checked;
+      state.tts.readFollow = document.getElementById('toggle-read-follow').checked;
+
+      const templateEl = document.getElementById('select-chat-template');
+      if (templateEl) {
+        state.tts.chatTemplate = templateEl.value;
+      }
+    }
+
+    function updateBlacklistConfig() {
+      const enabledEl = document.getElementById('toggle-blacklist-enabled');
+      const wordsEl = document.getElementById('input-blacklist-words');
+      const usersEl = document.getElementById('input-blacklist-users');
+
+      if (enabledEl) state.blacklist.enabled = enabledEl.checked;
+      if (wordsEl) state.blacklist.words = wordsEl.value;
+      if (usersEl) state.blacklist.users = usersEl.value;
+
+      localStorage.setItem('tiktok_bl_enabled', state.blacklist.enabled);
+      localStorage.setItem('tiktok_bl_words', state.blacklist.words);
+      localStorage.setItem('tiktok_bl_users', state.blacklist.users);
+    }
+
+    function initBlacklistUI() {
+      const enabledEl = document.getElementById('toggle-blacklist-enabled');
+      const wordsEl = document.getElementById('input-blacklist-words');
+      const usersEl = document.getElementById('input-blacklist-users');
+
+      if (enabledEl) enabledEl.checked = state.blacklist.enabled;
+      if (wordsEl) wordsEl.value = state.blacklist.words;
+      if (usersEl) usersEl.value = state.blacklist.users;
+    }
+
+    document.getElementById('toggle-read-chat').addEventListener('change', updateTTSConfig);
+    document.getElementById('toggle-read-follow').addEventListener('change', updateTTSConfig);
+
+    function testSpeech() {
+      unlockAudio();
+      ttsQueue.enqueue('chat', 'Nguyễn Văn A', 'Thử nghiệm tính năng đọc bình luận TikTok Live bằng giọng nói.');
+      ttsQueue.enqueue('follow', 'Trần Thị B', '');
+    }
+
+    function clearSpeechQueue() { ttsQueue.clear(); }
+
+    /* ==========================================================================
+       8. MODAL & PROXY CONFIG
+       ========================================================================== */
+    function toggleProxyModal() {
+      document.getElementById('modal-proxy').classList.toggle('hidden');
+    }
+
+    function applyProxyPreset() {
+      const preset = document.getElementById('select-proxy-preset').value;
+      const customContainer = document.getElementById('custom-proxy-container');
+      
+      if (preset === 'custom') {
+        customContainer.classList.remove('hidden');
+      } else {
+        customContainer.classList.add('hidden');
+      }
+    }
+
+    function saveProxySettings() {
+      const preset = document.getElementById('select-proxy-preset').value;
+      if (preset === 'custom') {
+        state.proxyUrl = document.getElementById('input-proxy-url').value.trim();
+      } else if (preset === 'auto') {
+        state.proxyUrl = '';
+      } else {
+        state.proxyUrl = preset;
+      }
+
+      localStorage.setItem('tiktok_proxy_url', state.proxyUrl);
+      toggleProxyModal();
+      alert('Đã lưu cấu hình Proxy mới!');
+    }
+
+    /* ==========================================================================
+       9. INITIALIZATION
+       ========================================================================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      populateVoices();
+      initBlacklistUI();
+      window.addEventListener('click', () => unlockAudio(), { once: true });
+    });
+  </script>
+</body>
+</html>
