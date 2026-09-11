@@ -82,18 +82,31 @@
         </div>
       </div>
 
-      <!-- Global Status Badges -->
-      <div class="flex items-center space-x-3">
+      <!-- Global Status Badges & Auth Section -->
+      <div class="flex flex-wrap items-center gap-3">
         <!-- Autoplay Audio Status -->
         <button id="btn-unlock-audio" onclick="unlockAudio()" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border transition-all duration-200 bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20">
           <i id="icon-audio-status" data-lucide="volume-x" class="w-4 h-4"></i>
-          <span id="text-audio-status">Âm thanh chưa kích hoạt (Bấm để bật)</span>
+          <span id="text-audio-status">Âm thanh chưa bật</span>
         </button>
 
         <!-- Connection Status Badge -->
         <div id="connection-badge" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border border-slate-700 bg-slate-800 text-slate-400">
           <span id="status-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
           <span id="status-text">Chưa kết nối</span>
+        </div>
+
+        <!-- Dynamic User Auth Container -->
+        <div id="auth-container" class="flex items-center space-x-2 pl-2 border-l border-slate-800">
+          <!-- Populated dynamically via JS -->
+          <button onclick="openLoginModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition">
+            <i data-lucide="log-in" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Đăng Nhập</span>
+          </button>
+          <button onclick="openRegisterModal()" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition shadow-sm shadow-cyan-500/20">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+            <span>Đăng Ký</span>
+          </button>
         </div>
       </div>
     </div>
@@ -107,7 +120,7 @@
       <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         
         <!-- TikTok Username Input -->
-        <div class="flex-1 flex items-center space-x-3">
+        <div class="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div class="relative flex-1">
             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold">
               @
@@ -120,15 +133,27 @@
             />
           </div>
 
-          <!-- Connect Button -->
-          <button 
-            id="btn-connect" 
-            onclick="toggleConnection()" 
-            class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition-all whitespace-nowrap active:scale-95"
-          >
-            <i id="icon-connect" data-lucide="plug" class="w-4 h-4"></i>
-            <span id="text-connect">Kết Nối Live</span>
-          </button>
+          <div class="flex items-center space-x-2">
+            <!-- Connect Button -->
+            <button 
+              id="btn-connect" 
+              onclick="toggleConnection()" 
+              class="px-5 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition-all whitespace-nowrap active:scale-95"
+            >
+              <i id="icon-connect" data-lucide="plug" class="w-4 h-4"></i>
+              <span id="text-connect">Kết Nối Live</span>
+            </button>
+
+            <!-- Save ID to Account Button -->
+            <button 
+              onclick="saveCurrentTikTokId()" 
+              class="px-3.5 py-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-xl text-sm font-semibold flex items-center space-x-1.5 transition active:scale-95" 
+              title="Lưu TikTok ID này vào tài khoản cá nhân để chọn nhanh"
+            >
+              <i data-lucide="bookmark-plus" class="w-4 h-4 text-amber-400"></i>
+              <span class="hidden sm:inline">Lưu ID</span>
+            </button>
+          </div>
         </div>
 
         <!-- Secondary Actions -->
@@ -152,6 +177,18 @@
           </button>
         </div>
 
+      </div>
+
+      <!-- Saved TikTok IDs Quick Bar (User Private Space) -->
+      <div id="saved-ids-section" class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-2 text-xs">
+        <div class="flex items-center space-x-1 text-slate-400 font-medium mr-1">
+          <i data-lucide="bookmark" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>Không gian riêng:</span>
+        </div>
+        <div id="saved-ids-list" class="flex flex-wrap items-center gap-2">
+          <!-- Populated dynamically via JS -->
+          <span class="text-slate-500 italic">Đăng nhập tài khoản để lưu sẵn danh sách TikTok ID kết nối nhanh.</span>
+        </div>
       </div>
 
       <!-- Diagnostic Banner for Connection Failures -->
@@ -418,6 +455,206 @@
   <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
     <p>TikTok Live Voice Reader &copy; 2026 <span class="text-red-500 font-bold ml-1">(Xuân Vương)</span></p>
   </footer>
+
+  <!-- 1. LOGIN MODAL -->
+  <div id="modal-login" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+      <button onclick="closeAuthModals()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl mx-auto flex items-center justify-center text-cyan-400 mb-2">
+          <i data-lucide="log-in" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-100">Đăng Nhập Tài Khoản</h3>
+        <p class="text-xs text-slate-400">Đăng nhập để quản lý không gian TikTok ID cá nhân của bạn</p>
+      </div>
+
+      <div id="login-error" class="hidden p-3 bg-rose-950/50 border border-rose-500/40 rounded-xl text-xs text-rose-300 font-medium"></div>
+
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Tên đăng nhập (User ID):</label>
+          <input 
+            type="text" 
+            id="login-username" 
+            required 
+            placeholder="Nhập User ID (VD: user123)" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-cyan-500 text-sm font-medium"
+          />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Mật khẩu:</label>
+          <input 
+            type="password" 
+            id="login-password" 
+            required 
+            placeholder="••••••••" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-cyan-500 text-sm font-medium"
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-lg shadow-cyan-500/20 active:scale-95"
+        >
+          Đăng Nhập
+        </button>
+      </form>
+
+      <div class="pt-2 text-center text-xs text-slate-400 border-t border-slate-800">
+        Chưa có tài khoản? 
+        <button onclick="openRegisterModal()" class="text-cyan-400 font-bold hover:underline">Đăng ký ngay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. REGISTER MODAL -->
+  <div id="modal-register" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+      <button onclick="closeAuthModals()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl mx-auto flex items-center justify-center text-emerald-400 mb-2">
+          <i data-lucide="user-plus" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-100">Tạo Tài Khoản Mới</h3>
+        <p class="text-xs text-slate-400">Đăng ký tài khoản cá nhân để lưu sẵn danh sách TikTok ID</p>
+      </div>
+
+      <div id="register-error" class="hidden p-3 bg-rose-950/50 border border-rose-500/40 rounded-xl text-xs text-rose-300 font-medium"></div>
+
+      <form onsubmit="handleRegisterSubmit(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">
+            Tên người dùng làm User ID trên hệ thống: <span class="text-rose-400">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="register-username" 
+            required 
+            placeholder="VD: user123 (Từ 5 ký tự chữ hoặc số)" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-cyan-500 text-sm font-medium"
+          />
+          <p class="text-[11px] text-slate-400 mt-1">Yêu cầu: Trên 5 ký tự (chỉ bao gồm chữ cái, chữ số hoặc dấu _)</p>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Tên hiển thị: <span class="text-rose-400">*</span></label>
+          <input 
+            type="text" 
+            id="register-displayname" 
+            required 
+            placeholder="VD: Nguyễn Văn A" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-cyan-500 text-sm font-medium"
+          />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Mật khẩu: <span class="text-rose-400">*</span></label>
+          <input 
+            type="password" 
+            id="register-password" 
+            required 
+            placeholder="Nhập mật khẩu" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-cyan-500 text-sm font-medium"
+          />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Nhập lại mật khẩu: <span class="text-rose-400">*</span></label>
+          <input 
+            type="password" 
+            id="register-confirmpassword" 
+            required 
+            placeholder="Xác nhận mật khẩu" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-cyan-500 text-sm font-medium"
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-500/20 active:scale-95 mt-2"
+        >
+          Hoàn Tất Đăng Ký
+        </button>
+      </form>
+
+      <div class="pt-2 text-center text-xs text-slate-400 border-t border-slate-800">
+        Đã có tài khoản? 
+        <button onclick="openLoginModal()" class="text-cyan-400 font-bold hover:underline">Đăng nhập</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ADMIN MANAGEMENT DASHBOARD MODAL -->
+  <div id="modal-admin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] flex flex-col relative">
+      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Admin Header -->
+      <div class="flex items-center space-x-3 border-b border-slate-800 pb-4">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-100">Bảng Quản Lý Admin - Hệ Thống Đa Người Dùng</h3>
+          <p class="text-xs text-slate-400">Quản lý danh sách tài khoản, xem TikTok ID đã lưu, chặn hoặc xóa người dùng</p>
+        </div>
+      </div>
+
+      <!-- Stats Bar & Search -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs">
+        <div class="flex items-center space-x-4">
+          <div><span class="text-slate-400">Tổng số user:</span> <strong id="admin-stat-total" class="text-cyan-400 font-bold ml-1">0</strong></div>
+          <div><span class="text-slate-400">Đang chạy:</span> <strong id="admin-stat-active" class="text-emerald-400 font-bold ml-1">0</strong></div>
+          <div><span class="text-slate-400">Bị khóa:</span> <strong id="admin-stat-blocked" class="text-rose-400 font-bold ml-1">0</strong></div>
+        </div>
+
+        <div class="relative flex-1 max-w-xs">
+          <input 
+            type="text" 
+            id="admin-search-input" 
+            oninput="renderAdminUsersTable()" 
+            placeholder="Tìm kiếm User ID hoặc Tên..." 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-slate-200 placeholder-slate-500 text-xs focus:outline-none focus:border-purple-500"
+          />
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5"></i>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="flex-1 overflow-y-auto border border-slate-800 rounded-xl bg-slate-950">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-900/80 text-slate-400 sticky top-0 border-b border-slate-800">
+            <tr>
+              <th class="p-3">User ID</th>
+              <th class="p-3">Tên Hiển Thị</th>
+              <th class="p-3">Vai Trò</th>
+              <th class="p-3">Trạng Thái</th>
+              <th class="p-3">TikTok IDs Đã Lưu</th>
+              <th class="p-3 text-right">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pt-2 text-right">
+        <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- PROXY & SERVER CONFIG MODAL -->
   <div id="modal-proxy" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -1334,12 +1571,434 @@
     }
 
     /* ==========================================================================
-       9. INITIALIZATION
+       10. USER AUTHENTICATION & ADMIN MANAGEMENT
+       ========================================================================== */
+    let currentUser = null;
+    let adminUsersList = [];
+
+    function getAuthToken() {
+      return localStorage.getItem('tiktokxv_token') || '';
+    }
+
+    function setAuthToken(token) {
+      if (token) {
+        localStorage.setItem('tiktokxv_token', token);
+      } else {
+        localStorage.removeItem('tiktokxv_token');
+      }
+    }
+
+    function openLoginModal() {
+      closeAuthModals();
+      document.getElementById('login-error').classList.add('hidden');
+      document.getElementById('modal-login').classList.remove('hidden');
+    }
+
+    function openRegisterModal() {
+      closeAuthModals();
+      document.getElementById('register-error').classList.add('hidden');
+      document.getElementById('modal-register').classList.remove('hidden');
+    }
+
+    function closeAuthModals() {
+      document.getElementById('modal-login').classList.add('hidden');
+      document.getElementById('modal-register').classList.add('hidden');
+    }
+
+    function openAdminModal() {
+      if (!currentUser || currentUser.role !== 'admin') {
+        alert('Chỉ tài khoản Admin mới có quyền truy cập!');
+        return;
+      }
+      document.getElementById('modal-admin').classList.remove('hidden');
+      fetchAdminUsers();
+    }
+
+    function closeAdminModal() {
+      document.getElementById('modal-admin').classList.add('hidden');
+    }
+
+    async function fetchCurrentUser() {
+      const token = getAuthToken();
+      if (!token) {
+        currentUser = null;
+        renderAuthUI();
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          currentUser = data.user;
+        } else {
+          setAuthToken('');
+          currentUser = null;
+        }
+      } catch (e) {
+        console.error('Error fetching user profile:', e);
+        currentUser = null;
+      }
+      renderAuthUI();
+    }
+
+    function renderAuthUI() {
+      const container = document.getElementById('auth-container');
+      const savedList = document.getElementById('saved-ids-list');
+
+      if (!container) return;
+
+      if (currentUser) {
+        const isAdmin = currentUser.role === 'admin';
+        container.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <div class="px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg flex items-center space-x-1.5 text-xs">
+              <i data-lucide="user" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span class="font-bold text-slate-100">${currentUser.displayName}</span>
+              <span class="text-slate-400 font-medium">(@${currentUser.username})</span>
+              ${isAdmin ? '<span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">Admin</span>' : ''}
+            </div>
+            ${isAdmin ? `
+              <button onclick="openAdminModal()" class="px-2.5 py-1.5 bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-300 rounded-lg text-xs font-bold flex items-center space-x-1 transition shadow-sm">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                <span>Quản Lý Admin</span>
+              </button>
+            ` : ''}
+            <button onclick="logoutUser()" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 border border-slate-700 rounded-lg text-xs font-semibold transition" title="Đăng xuất">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+
+        // Render Saved TikTok IDs
+        if (savedList) {
+          const ids = currentUser.savedTikTokIds || [];
+          if (ids.length === 0) {
+            savedList.innerHTML = `<span class="text-slate-500 italic">Chưa có TikTok ID nào được lưu. Nhập ID bên trên và nhấn "Lưu ID" để lưu nhanh!</span>`;
+          } else {
+            savedList.innerHTML = ids.map(id => `
+              <div class="inline-flex items-center space-x-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-medium transition cursor-pointer group">
+                <span onclick="selectSavedTikTokId('${id}')">@${id}</span>
+                <button onclick="removeSavedTikTokId('${id}')" class="text-slate-500 hover:text-rose-400 p-0.5 rounded ml-1" title="Xóa ID này">
+                  <i data-lucide="x" class="w-3 h-3"></i>
+                </button>
+              </div>
+            `).join('');
+          }
+        }
+      } else {
+        container.innerHTML = `
+          <button onclick="openLoginModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition">
+            <i data-lucide="log-in" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Đăng Nhập</span>
+          </button>
+          <button onclick="openRegisterModal()" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition shadow-sm shadow-cyan-500/20">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+            <span>Đăng Ký</span>
+          </button>
+        `;
+
+        if (savedList) {
+          savedList.innerHTML = `<span class="text-slate-500 italic">💡 Đăng nhập tài khoản để lưu sẵn danh sách TikTok ID kết nối nhanh không cần nhập thủ công.</span>`;
+        }
+      }
+
+      lucide.createIcons();
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const errorEl = document.getElementById('login-error');
+      errorEl.classList.add('hidden');
+
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setAuthToken(data.token);
+          currentUser = data.user;
+          closeAuthModals();
+          renderAuthUI();
+        } else {
+          errorEl.innerText = data.error || 'Đăng nhập không thành công.';
+          errorEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorEl.innerText = 'Lỗi kết nối máy chủ.';
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    async function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const errorEl = document.getElementById('register-error');
+      errorEl.classList.add('hidden');
+
+      const username = document.getElementById('register-username').value.trim();
+      const displayName = document.getElementById('register-displayname').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirmpassword').value;
+
+      // Client-side regex validation (min 5 alphanumeric/underscore chars)
+      const usernameRegex = /^[a-zA-Z0-9_]{5,}$/;
+      if (!usernameRegex.test(username)) {
+        errorEl.innerText = 'Tên người dùng (User ID) phải chứa trên 5 ký tự (chỉ bao gồm chữ cái, chữ số hoặc dấu gạch dưới, không khoảng trắng).';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        errorEl.innerText = 'Nhập lại mật khẩu không khớp!';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, displayName, password, confirmPassword })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setAuthToken(data.token);
+          currentUser = data.user;
+          closeAuthModals();
+          renderAuthUI();
+          alert(`Đăng ký thành công! Chào mừng ${currentUser.displayName} (@${currentUser.username}).`);
+        } else {
+          errorEl.innerText = data.error || 'Đăng ký không thành công.';
+          errorEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorEl.innerText = 'Lỗi kết nối máy chủ.';
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    function logoutUser() {
+      setAuthToken('');
+      currentUser = null;
+      renderAuthUI();
+    }
+
+    async function saveCurrentTikTokId() {
+      if (!currentUser) {
+        alert('Vui lòng Đăng ký hoặc Đăng nhập tài khoản để lưu TikTok ID vào không gian riêng của bạn!');
+        openLoginModal();
+        return;
+      }
+
+      const rawInput = document.getElementById('input-tiktok-id').value;
+      const cleanId = (rawInput || '').replace(/^@/, '').replace(/\s+/g, '').trim();
+
+      if (!cleanId) {
+        alert('Vui lòng nhập TikTok ID trước khi bấm Lưu!');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/user/saved-tiktok-ids', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: JSON.stringify({ tiktokId: cleanId, action: 'add' })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          currentUser.savedTikTokIds = data.savedTikTokIds;
+          renderAuthUI();
+        } else {
+          alert(data.error || 'Không thể lưu TikTok ID.');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối khi lưu TikTok ID.');
+      }
+    }
+
+    async function removeSavedTikTokId(tiktokId) {
+      if (!currentUser) return;
+
+      try {
+        const res = await fetch('/api/user/saved-tiktok-ids', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: JSON.stringify({ tiktokId, action: 'remove' })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          currentUser.savedTikTokIds = data.savedTikTokIds;
+          renderAuthUI();
+        }
+      } catch (err) {
+        console.error('Error removing saved TikTok ID:', err);
+      }
+    }
+
+    function selectSavedTikTokId(id) {
+      document.getElementById('input-tiktok-id').value = id;
+      toggleConnection();
+    }
+
+    // --- ADMIN MANAGEMENT FUNCTIONS ---
+
+    async function fetchAdminUsers() {
+      try {
+        const res = await fetch('/api/admin/users', {
+          headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          adminUsersList = data.users || [];
+          renderAdminUsersTable();
+        } else {
+          alert(data.error || 'Lỗi khi tải danh sách người dùng.');
+        }
+      } catch (err) {
+        console.error('Fetch admin users error:', err);
+      }
+    }
+
+    function renderAdminUsersTable() {
+      const tbody = document.getElementById('admin-users-tbody');
+      const searchVal = (document.getElementById('admin-search-input')?.value || '').toLowerCase().trim();
+
+      if (!tbody) return;
+
+      const filtered = adminUsersList.filter(u => 
+        u.username.toLowerCase().includes(searchVal) || 
+        u.displayName.toLowerCase().includes(searchVal)
+      );
+
+      // Update stats
+      document.getElementById('admin-stat-total').innerText = adminUsersList.length;
+      document.getElementById('admin-stat-active').innerText = adminUsersList.filter(u => u.status === 'active').length;
+      document.getElementById('admin-stat-blocked').innerText = adminUsersList.filter(u => u.status === 'blocked').length;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500 italic">Không tìm thấy tài khoản nào.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(u => {
+        const isAdmin = u.role === 'admin';
+        const isBlocked = u.status === 'blocked';
+        const isSelf = currentUser && currentUser.username.toLowerCase() === u.username.toLowerCase();
+        const savedIdsCount = (u.savedTikTokIds || []).length;
+        const savedIdsTooltip = (u.savedTikTokIds || []).join(', ');
+
+        return `
+          <tr class="hover:bg-slate-900 transition">
+            <td class="p-3 font-bold text-cyan-300">
+              @${u.username}
+              ${isSelf ? '<span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded ml-1 font-normal">(Bạn)</span>' : ''}
+            </td>
+            <td class="p-3 font-medium text-slate-200">${u.displayName}</td>
+            <td class="p-3">
+              ${isAdmin 
+                ? '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-purple-500/20 border border-purple-500/40 text-purple-300">Admin</span>' 
+                : '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-400">User</span>'}
+            </td>
+            <td class="p-3">
+              ${isBlocked 
+                ? '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-400">Bị khóa</span>' 
+                : '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">Hoạt động</span>'}
+            </td>
+            <td class="p-3 text-slate-400">
+              <span title="${savedIdsTooltip}">${savedIdsCount} ID đã lưu ${savedIdsCount > 0 ? `(${u.savedTikTokIds.slice(0, 2).map(id => '@' + id).join(', ')}${savedIdsCount > 2 ? '...' : ''})` : ''}</span>
+            </td>
+            <td class="p-3 text-right space-x-1.5">
+              ${!isSelf ? `
+                <button onclick="toggleUserStatus('${u.username}', '${isBlocked ? 'active' : 'blocked'}')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${isBlocked ? 'bg-emerald-950 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900' : 'bg-amber-950 border border-amber-500/40 text-amber-300 hover:bg-amber-900'}">
+                  ${isBlocked ? 'Mở Khóa' : 'Chặn'}
+                </button>
+                <button onclick="deleteUserAccount('${u.username}')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-950 border border-rose-500/40 text-rose-300 hover:bg-rose-900 transition">
+                  Xóa
+                </button>
+              ` : '<span class="text-slate-600 text-[11px] italic">Tài khoản hiện tại</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    async function toggleUserStatus(username, newStatus) {
+      if (!confirm(`Bạn có chắc chắn muốn ${newStatus === 'blocked' ? 'KHÓA' : 'MỞ KHÓA'} tài khoản "@${username}"?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/users/status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: JSON.stringify({ username, status: newStatus })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          fetchAdminUsers();
+        } else {
+          alert(data.error || 'Lỗi khi cập nhật trạng thái user.');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ.');
+      }
+    }
+
+    async function deleteUserAccount(username) {
+      if (!confirm(`⚠️ CẢNH BÁO: Hành động này sẽ XÓA VĨNH VIỄN tài khoản "@${username}". Bạn có chắc chắn không?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          fetchAdminUsers();
+        } else {
+          alert(data.error || 'Lỗi khi xóa tài khoản.');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ.');
+      }
+    }
+
+    /* ==========================================================================
+       11. INITIALIZATION
        ========================================================================== */
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
       populateVoices();
       initBlacklistUI();
+      fetchCurrentUser();
       window.addEventListener('click', () => unlockAudio(), { once: true });
     });
   </script>

@@ -1,6 +1,23 @@
 # 🎵 TikTok XV - Đọc Bình Luận & Follow Bằng Giọng Nói Trên Live TikTok
 
-Ứng dụng web hỗ trợ kết nối trực tiếp đến các phòng **TikTok Live** đang phát sóng thời gian thực, tự động bắt sự kiện bình luận (Chat) và lượt theo dõi (Follow), sau đó đọc phát âm thanh bằng giọng đọc Tiếng Việt chuẩn.
+Ứng dụng web hỗ trợ kết nối trực tiếp đến các phòng **TikTok Live** đang phát sóng thời gian thực, tự động bắt sự kiện bình luận (Chat) và lượt theo dõi (Follow), hỗ trợ hệ thống **Đa Người Dùng (Multi-user)** có không gian lưu trữ TikTok ID riêng biệt và Bảng quản lý Admin.
+
+---
+
+## 👥 HỆ THỐNG ĐA NGƯỜI DÙNG & TÀI KHOẢN ADMIN
+
+Hệ thống đã hỗ trợ đầy đủ quản lý đa tài khoản:
+- **Đăng Ký Tài Khoản:** Tên đăng nhập (User ID) yêu cầu **trên 5 ký tự** chữ hoặc số (VD: `user123`), Tên hiển thị, Mật khẩu & Nhập lại mật khẩu.
+- **Không Gian Riêng Cá Nhân:** Sau khi đăng nhập, người dùng có thể lưu nhiều TikTok ID vào tài khoản của mình. Khi vào lại website chỉ cần nhấp 1-click vào TikTok ID đã lưu để kết nối ngay.
+- **Bảng Quản Lý Admin:** Tài khoản Quản trị viên (Admin) có quyền:
+  - Xem danh sách toàn bộ người dùng & số lượng TikTok ID đã lưu.
+  - **Chặn / Khóa (Block)** tài khoản vi phạm.
+  - **Xóa** tài khoản người dùng khỏi hệ thống.
+
+> 🔑 **Tài khoản Admin mặc định hệ thống tự khởi tạo:**
+> - **Tên đăng nhập (User ID):** `admin`
+> - **Mật khẩu:** `admin123`
+> *(Bạn nên đăng nhập bằng tài khoản Admin này để quản trị hoặc đổi mật khẩu).*
 
 ---
 

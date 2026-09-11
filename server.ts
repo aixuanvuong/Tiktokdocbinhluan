@@ -1,9 +1,19 @@
 import express from 'express';
 import http from 'http';
 import path from 'path';
+import crypto from 'crypto';
 import { Server as SocketIOServer } from 'socket.io';
 import { createServer as createViteServer } from 'vite';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
+import {
+  getUsers,
+  saveUsers,
+  findUserByUsername,
+  findUserByToken,
+  hashPassword,
+  generateToken,
+  UserRecord
+} from './server/db.js';
 
 function formatTikTokErrorMessage(err: any, cleanUsername: string): string {
   let rawMsg = '';
@@ -86,6 +96,285 @@ async function startServer() {
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
+  });
+
+  // Authentication Middleware Helper
+  const authMiddleware = (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!token) {
+      return res.status(401).json({ error: 'Chưa đăng nhập hoặc phiên làm việc đã hết hạn.' });
+    }
+    const user = findUserByToken(token);
+    if (!user) {
+      return res.status(401).json({ error: 'Token không hợp lệ hoặc đã hết hạn.' });
+    }
+    if (user.status === 'blocked') {
+      return res.status(403).json({ error: 'Tài khoản của bạn đã bị quản trị viên khóa!' });
+    }
+    req.user = user;
+    next();
+  };
+
+  // Admin Middleware Helper
+  const adminMiddleware = (req: any, res: any, next: any) => {
+    authMiddleware(req, res, () => {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Chỉ có tài khoản Quản trị viên (Admin) mới có quyền truy cập.' });
+      }
+      next();
+    });
+  };
+
+  // --- AUTH ROUTES ---
+
+  // 1. Register User
+  app.post('/api/auth/register', (req, res) => {
+    try {
+      const { username, displayName, password, confirmPassword } = req.body || {};
+
+      const cleanUsername = (username || '').trim();
+      const cleanDisplayName = (displayName || '').trim();
+
+      // Validate Username (User ID): Must be at least 5 alphanumeric/underscore characters
+      const usernameRegex = /^[a-zA-Z0-9_]{5,}$/;
+      if (!cleanUsername || !usernameRegex.test(cleanUsername)) {
+        return res.status(400).json({
+          error: 'Tên đăng nhập (User ID) phải chứa ít nhất 5 ký tự (chỉ gồm chữ cái, chữ số hoặc dấu gạch dưới, không có khoảng trắng).'
+        });
+      }
+
+      if (!cleanDisplayName) {
+        return res.status(400).json({ error: 'Vui lòng nhập Tên hiển thị.' });
+      }
+
+      if (!password || password.length < 4) {
+        return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 4 ký tự.' });
+      }
+
+      if (password !== confirmPassword) {
+        return res.status(400).json({ error: 'Nhập lại mật khẩu không khớp.' });
+      }
+
+      // Check existing username
+      const existing = findUserByUsername(cleanUsername);
+      if (existing) {
+        return res.status(400).json({ error: `Tên đăng nhập "${cleanUsername}" đã tồn tại. Vui lòng chọn tên khác.` });
+      }
+
+      // Create new user
+      const users = getUsers();
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = hashPassword(password, salt);
+      const token = generateToken();
+
+      const newUser: UserRecord = {
+        username: cleanUsername,
+        displayName: cleanDisplayName,
+        passwordHash: hash,
+        salt,
+        role: 'user',
+        status: 'active',
+        savedTikTokIds: [],
+        createdAt: new Date().toISOString(),
+        token
+      };
+
+      users.push(newUser);
+      saveUsers(users);
+
+      res.json({
+        success: true,
+        token,
+        user: {
+          username: newUser.username,
+          displayName: newUser.displayName,
+          role: newUser.role,
+          status: newUser.status,
+          savedTikTokIds: newUser.savedTikTokIds
+        }
+      });
+    } catch (err: any) {
+      console.error('Register error:', err);
+      res.status(500).json({ error: 'Lỗi hệ thống khi đăng ký.' });
+    }
+  });
+
+  // 2. Login User
+  app.post('/api/auth/login', (req, res) => {
+    try {
+      const { username, password } = req.body || {};
+      const cleanUsername = (username || '').trim();
+
+      if (!cleanUsername || !password) {
+        return res.status(400).json({ error: 'Vui lòng nhập Tên đăng nhập và Mật khẩu.' });
+      }
+
+      const user = findUserByUsername(cleanUsername);
+      if (!user) {
+        return res.status(400).json({ error: 'Tên đăng nhập hoặc mật khẩu không chính xác.' });
+      }
+
+      if (user.status === 'blocked') {
+        return res.status(403).json({ error: 'Tài khoản này đã bị quản trị viên khóa. Vui lòng liên hệ Admin!' });
+      }
+
+      const hash = hashPassword(password, user.salt);
+      if (hash !== user.passwordHash) {
+        return res.status(400).json({ error: 'Tên đăng nhập hoặc mật khẩu không chính xác.' });
+      }
+
+      // Update token
+      const token = generateToken();
+      const users = getUsers();
+      const uIndex = users.findIndex(u => u.username.toLowerCase() === user.username.toLowerCase());
+      if (uIndex !== -1) {
+        users[uIndex].token = token;
+        saveUsers(users);
+      }
+
+      res.json({
+        success: true,
+        token,
+        user: {
+          username: user.username,
+          displayName: user.displayName,
+          role: user.role,
+          status: user.status,
+          savedTikTokIds: user.savedTikTokIds
+        }
+      });
+    } catch (err: any) {
+      console.error('Login error:', err);
+      res.status(500).json({ error: 'Lỗi hệ thống khi đăng nhập.' });
+    }
+  });
+
+  // 3. Get Current User (Me)
+  app.get('/api/auth/me', authMiddleware, (req: any, res) => {
+    const user = req.user;
+    res.json({
+      success: true,
+      user: {
+        username: user.username,
+        displayName: user.displayName,
+        role: user.role,
+        status: user.status,
+        savedTikTokIds: user.savedTikTokIds
+      }
+    });
+  });
+
+  // 4. Save or Remove TikTok ID in User's Private Space
+  app.post('/api/user/saved-tiktok-ids', authMiddleware, (req: any, res) => {
+    try {
+      const { tiktokId, action } = req.body || {};
+      const cleanId = (tiktokId || '').replace(/^@/, '').replace(/\s+/g, '').trim();
+
+      if (!cleanId) {
+        return res.status(400).json({ error: 'TikTok Unique ID không hợp lệ.' });
+      }
+
+      const users = getUsers();
+      const uIndex = users.findIndex(u => u.username.toLowerCase() === req.user.username.toLowerCase());
+      if (uIndex === -1) {
+        return res.status(404).json({ error: 'Không tìm thấy thông tin người dùng.' });
+      }
+
+      let currentSaved = users[uIndex].savedTikTokIds || [];
+
+      if (action === 'add') {
+        if (!currentSaved.some(id => id.toLowerCase() === cleanId.toLowerCase())) {
+          currentSaved.push(cleanId);
+        }
+      } else if (action === 'remove') {
+        currentSaved = currentSaved.filter(id => id.toLowerCase() !== cleanId.toLowerCase());
+      }
+
+      users[uIndex].savedTikTokIds = currentSaved;
+      saveUsers(users);
+
+      res.json({
+        success: true,
+        savedTikTokIds: currentSaved
+      });
+    } catch (err: any) {
+      console.error('Saved TikTok IDs error:', err);
+      res.status(500).json({ error: 'Lỗi hệ thống khi lưu TikTok ID.' });
+    }
+  });
+
+  // --- ADMIN ROUTES ---
+
+  // 1. Get all users (Admin only)
+  app.get('/api/admin/users', adminMiddleware, (req, res) => {
+    const users = getUsers().map(u => ({
+      username: u.username,
+      displayName: u.displayName,
+      role: u.role,
+      status: u.status,
+      savedTikTokIds: u.savedTikTokIds || [],
+      createdAt: u.createdAt
+    }));
+    res.json({ success: true, users });
+  });
+
+  // 2. Block/Unblock user (Admin only)
+  app.post('/api/admin/users/status', adminMiddleware, (req: any, res) => {
+    try {
+      const { username, status } = req.body || {};
+      if (!username || (status !== 'active' && status !== 'blocked')) {
+        return res.status(400).json({ error: 'Dữ liệu không hợp lệ.' });
+      }
+
+      if (username.toLowerCase() === req.user.username.toLowerCase()) {
+        return res.status(400).json({ error: 'Bạn không thể tự khóa tài khoản Admin của chính mình!' });
+      }
+
+      const users = getUsers();
+      const uIndex = users.findIndex(u => u.username.toLowerCase() === username.toLowerCase());
+      if (uIndex === -1) {
+        return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+      }
+
+      users[uIndex].status = status;
+      // If blocked, clear session token to force logout
+      if (status === 'blocked') {
+        delete users[uIndex].token;
+      }
+
+      saveUsers(users);
+      res.json({ success: true, username, status });
+    } catch (err) {
+      res.status(500).json({ error: 'Lỗi hệ thống khi đổi trạng thái.' });
+    }
+  });
+
+  // 3. Delete user account (Admin only)
+  app.delete('/api/admin/users/:username', adminMiddleware, (req: any, res) => {
+    try {
+      const username = req.params.username;
+      if (!username) {
+        return res.status(400).json({ error: 'Dữ liệu không hợp lệ.' });
+      }
+
+      if (username.toLowerCase() === req.user.username.toLowerCase()) {
+        return res.status(400).json({ error: 'Bạn không thể xóa tài khoản Admin của chính mình!' });
+      }
+
+      let users = getUsers();
+      const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+      if (!exists) {
+        return res.status(404).json({ error: 'Không tìm thấy người dùng để xóa.' });
+      }
+
+      users = users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
+      saveUsers(users);
+
+      res.json({ success: true, message: `Đã xóa tài khoản "${username}".` });
+    } catch (err) {
+      res.status(500).json({ error: 'Lỗi hệ thống khi xóa người dùng.' });
+    }
   });
 
   // Track active TikTok connections per socket
