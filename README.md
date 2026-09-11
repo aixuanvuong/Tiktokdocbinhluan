@@ -4,6 +4,42 @@
 
 ---
 
+## ⚡ CÀI ĐẶT 1 DÒNG LỆNH TRÊN UBUNTU SERVER (VPS)
+
+Sau khi bạn đã **Export dự án sang GitHub** (xem hướng dẫn bên dưới), bạn chỉ cần đăng nhập vào **Ubuntu Server** qua SSH và chạy **1 dòng lệnh duy nhất**:
+
+```bash
+git clone https://github.com/TÊN_GITHUB_CỦA_BẠN/TÊN_REPOSITORY.git app && cd app && chmod +x setup.sh && ./setup.sh
+```
+
+> **Kịch bản `setup.sh` sẽ tự động xử lý toàn bộ từ A-Z:**
+> 1. Cập nhật hệ thống Ubuntu & cài đặt công cụ cần thiết.
+> 2. Tự động cài đặt **Node.js 20 LTS** & **PM2** (Quản lý tiến trình khởi động cùng Ubuntu).
+> 3. Cài đặt toàn bộ thư viện npm (`npm install`).
+> 4. Đóng gói ứng dụng (`npm run build`).
+> 5. Khởi chạy ứng dụng chạy ngầm trên cổng `3000` và cấu hình tự động bật lại nếu server bị khởi động lại (Reboot).
+
+---
+
+## 🐳 CÀI ĐẶT QUA DOCKER (TÙY CHỌN)
+
+Nếu bạn ưa thích sử dụng Docker trên Ubuntu Server:
+
+```bash
+docker compose up -d --build
+```
+
+---
+
+## 📤 HƯỚNG DẪN XUẤT MÃ NGUỒN SANG GITHUB
+
+1. Trên màn hình AI Studio, nhấp vào biểu tượng **Settings (Bánh răng)** ở góc trên bên phải.
+2. Chọn **Export to GitHub** (hoặc Download ZIP).
+3. Đăng nhập tài khoản GitHub của bạn và chọn Tạo mới Repository.
+4. Sau khi đẩy mã nguồn lên GitHub thành công, bạn sao chép đường dẫn Repository GitHub của mình và thay vào câu lệnh 1 dòng ở trên.
+
+---
+
 ## ✨ Tính Năng Nổi Bật
 
 - **Kết nối TikTok Live Realtime:** Kết nối tới bất kỳ phòng TikTok Live công khai nào chỉ bằng Unique ID (`@username`).
@@ -26,87 +62,36 @@
 
 ---
 
-## 🛠️ Yêu Cầu Hệ Thống
+## 🛠️ Hướng Dẫn Cài Đặt Thủ Công (Nếụ Không Dùng Setup.sh)
 
-- **Node.js:** Phiên bản `18.0.0` trở lên.
-- **npm:** Đi kèm với Node.js (phiên bản `9.x` trở lên) hoặc **yarn** / **pnpm**.
-
----
-
-## 🚀 Hướng Dẫn Cài Đặt & Chạy Ứng Dụng
-
-### 1. Tải Mã Nguồn & Cài Đặt Dependencies
-
-Mở terminal/command prompt tại thư mục dự án và chạy lệnh:
-
+### 1. Cài Đặt Dependencies
 ```bash
 npm install
 ```
 
-### 2. Chạy Ở Chế Độ Phát Triển (Development)
-
-Chạy lệnh dev server:
-
+### 2. Chạy Chế Độ Development
 ```bash
 npm run dev
 ```
+Mở trình duyệt: `http://localhost:3000`
 
-Server sẽ khởi chạy tại cổng **3000**. Mở trình duyệt và truy cập:
-👉 **`http://localhost:3000`**
-
-### 3. Đóng Gói & Chạy Ở Chế Độ Sản Xuất (Production)
-
-Nếu muốn đóng gói ứng dụng để triển khai (Deploy) hoặc chạy thực tế:
-
-**Bước 1: Build ứng dụng**
+### 3. Build Production
 ```bash
 npm run build
-```
-
-**Bước 2: Khởi chạy sản phẩm**
-```bash
 npm start
 ```
 
-Ứng dụng sẽ chạy tại địa chỉ **`http://localhost:3000`**.
-
 ---
 
-## 📖 Hướng Dẫn Sử Dụng
-
-1. **Bật Âm Thanh Trình Duyệt:**
-   - Khi vừa mở trang web, nhấp vào nút **"Âm thanh chưa kích hoạt (Bấm để bật)"** ở góc trên bên phải để cấp quyền tự động phát âm thanh cho trình duyệt (Autoplay policy).
-
-2. **Kết Nối Phòng TikTok Live:**
-   - Tìm một tài khoản TikTok **đang phát trực tiếp thực tế**.
-   - Nhập Unique ID vào ô kết nối (Ví dụ: `user123` hoặc `@user123`).
-   - Nhấp nút **"Kết Nối Live"**.
-
-3. **Thử Nghiệm Không Cần Mở Live:**
-   - Bạn có thể nhấp nút **"Chạy Giả Lập Test"** (Màu tím) để chạy luồng dữ liệu bình luận & follow mẫu nhằm thử nghiệm hệ thống âm thanh.
-
-4. **Tùy Chỉnh Giọng Đọc:**
-   - Tại bảng **"Cấu Hình Giọng Đọc (TTS)"**, chọn Mẫu đọc bình luận mong muốn, điều chỉnh tốc độ hoặc chuyển đổi giữa giọng Google Online và giọng máy tính.
-
----
-
-## 📁 Cấu Trúc Thư Mục
+## 📁 Cấu Trúc Dự Án
 
 ```
+├── setup.sh               # Kịch bản tự động cài đặt 1 dòng lệnh trên Ubuntu Server
+├── Dockerfile             # File đóng gói Docker Image
+├── docker-compose.yml     # File cấu hình chạy Docker Compose
 ├── server.ts              # Server Node.js (Express + Socket.IO + TikTok Live Connector)
 ├── index.html             # Giao diện chính ứng dụng (Tailwind CSS, SpeechQueueManager UI)
 ├── package.json           # Danh sách thư viện & lệnh chạy (scripts)
 ├── vite.config.ts         # Cấu hình Vite build client
-├── metadata.json          # Thông tin ứng dụng
 └── README.md              # Tài liệu hướng dẫn cài đặt & sử dụng
 ```
-
----
-
-## ❓ Xử Lý Lỗi Thường Gặp
-
-- **Không kết nối được TikTok Live:**
-  - Kiểm tra xem tài khoản TikTok nhập vào có thực sự **ĐANG LIVESTREAM** hay không. Nếu kênh đang Offline, TikTok sẽ từ chối kết nối.
-- **Trình duyệt không phát tiếng:**
-  - Đảm bảo đã nhấp vào nút kích hoạt âm thanh màu xanh ở góc trên bên phải.
-  - Đảm bảo không bật chế độ Mute Tab trên trình duyệt.
