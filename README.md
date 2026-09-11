@@ -27,6 +27,24 @@ DOMAIN=live.yourdomain.com EMAIL=admin@yourdomain.com ./setup.sh
 
 ---
 
+## 🔄 CẬP NHẬT PHIÊN BẢN MỚI TRÊN SERVER (UPDATE)
+
+Sau khi bạn chỉnh sửa mã nguồn và đẩy (push) lên GitHub, để cập nhật phiên bản mới nhất trên Server Ubuntu đã cài đặt trước đó, bạn chỉ cần mở terminal Server và chạy **1 dòng lệnh duy nhất**:
+
+```bash
+cd app && chmod +x update.sh && ./update.sh
+```
+
+*(Hoặc chạy từ bất kỳ đâu: `cd /root/app && ./update.sh`)*
+
+> **Kịch bản `update.sh` sẽ tự động:**
+> 1. Kéo mã nguồn mới nhất từ GitHub (`git pull`).
+> 2. Cài đặt các thư viện mới nếu có (`npm install`).
+> 3. Đóng gói lại dự án (`npm run build`).
+> 4. Tự động Khởi động lại dịch vụ PM2 (`pm2 restart tiktok-live-reader`) mà không làm gián đoạn hệ thống.
+
+---
+
 ## 🐳 CÀI ĐẶT QUA DOCKER (TÙY CHỌN)
 
 Nếu bạn ưa thích sử dụng Docker trên Ubuntu Server:
