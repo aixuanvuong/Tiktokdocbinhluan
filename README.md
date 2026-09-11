@@ -1,4 +1,4 @@
-# 🎵 TikTok Live Reader - Đọc Bình Luận & Lượt Follow Bằng Giọng Nói (TTS)
+# 🎵 TikTok XV - Đọc Bình Luận & Follow Bằng Giọng Nói Trên Live TikTok
 
 Ứng dụng web hỗ trợ kết nối trực tiếp đến các phòng **TikTok Live** đang phát sóng thời gian thực, tự động bắt sự kiện bình luận (Chat) và lượt theo dõi (Follow), sau đó đọc phát âm thanh bằng giọng đọc Tiếng Việt chuẩn.
 

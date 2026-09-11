@@ -1,6 +1,6 @@
 {
-  "name": "TikTok Live Voice Reader",
-  "description": "Ứng dụng đọc bình luận và lượt follow TikTok Live bằng giọng nói (Text-to-Speech) Tiếng Việt 100% Client-side.",
+  "name": "TikTok XV",
+  "description": "Đọc bình luận & Follow bằng giọng nói Trên live TikTok",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
