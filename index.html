@@ -925,10 +925,43 @@
         this.currentUtterance = null;
         this.speakTimeout = null;
         this.resumeInterval = null;
+        this.recentComments = new Map();
         this.startKeepAlive();
       }
 
+      isDuplicateComment(username, rawContent) {
+        const cleanUser = (username || '').trim().toLowerCase();
+        const cleanContent = sanitizeForTTS(rawContent || '').toLowerCase();
+        if (!cleanContent) return false;
+
+        const userKey = `${cleanUser}:${cleanContent}`;
+        const now = Date.now();
+
+        // Kiểm tra xem người dùng đó có gửi cùng nội dung bình luận trong vòng 30 giây (30.000 ms) không
+        const lastUserTime = this.recentComments.get(userKey);
+        if (lastUserTime && (now - lastUserTime < 30000)) {
+          console.log(`[Deduplication 30s] Bỏ qua bình luận trùng lặp từ @${username}: "${cleanContent}" (${Math.round((now - lastUserTime)/1000)}s trước)`);
+          return true;
+        }
+
+        this.recentComments.set(userKey, now);
+
+        // Dọn dẹp cache quá 60 giây
+        if (this.recentComments.size > 300) {
+          for (const [k, time] of this.recentComments.entries()) {
+            if (now - time > 60000) this.recentComments.delete(k);
+          }
+        }
+
+        return false;
+      }
+
       enqueue(type, username, content) {
+        // Lọc trùng lặp bình luận trong vòng 30 giây đối với cùng người dùng
+        if (type === 'chat' && this.isDuplicateComment(username, content)) {
+          return;
+        }
+
         // Blacklist check: Skip reading if user or content is in blacklist
         if (state.blacklist.enabled) {
           if (isBlacklistedUser(username)) {
@@ -1007,6 +1040,16 @@
         const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=vi&client=tw-ob`;
 
         let finished = false;
+        let fallbackTriggered = false;
+
+        const triggerFallback = () => {
+          if (fallbackTriggered || finished) return;
+          fallbackTriggered = true;
+          if (this.speakTimeout) clearTimeout(this.speakTimeout);
+          this.currentAudio = null;
+          this.speakLocal(shortText);
+        };
+
         const done = () => {
           if (finished) return;
           finished = true;
@@ -1026,15 +1069,13 @@
           audio.onended = done;
           audio.onerror = (e) => {
             console.warn('Online Google TTS error, falling back to local speech:', e);
-            if (this.speakTimeout) clearTimeout(this.speakTimeout);
-            this.currentAudio = null;
-            this.speakLocal(shortText);
+            triggerFallback();
           };
 
-          // Generous dynamic timeout based on text length so long comments finish reading completely
+          // Dynamic timeout based on text length
           const dynamicTimeout = Math.max(25000, Math.ceil(shortText.length / 3) * 1000 + 15000);
           this.speakTimeout = setTimeout(() => {
-            if (!finished) {
+            if (!finished && !fallbackTriggered) {
               console.warn(`Online TTS timeout after ${dynamicTimeout}ms`);
               done();
             }
@@ -1044,16 +1085,12 @@
           if (playPromise !== undefined) {
             playPromise.catch(err => {
               console.warn('Audio play blocked or failed, falling back:', err);
-              if (this.speakTimeout) clearTimeout(this.speakTimeout);
-              this.currentAudio = null;
-              this.speakLocal(shortText);
+              triggerFallback();
             });
           }
         } catch (err) {
           console.error('speakOnline exception:', err);
-          if (this.speakTimeout) clearTimeout(this.speakTimeout);
-          this.currentAudio = null;
-          this.speakLocal(shortText);
+          triggerFallback();
         }
       }
 
@@ -1319,6 +1356,14 @@
     function connectTikTokLive(username) {
       unlockAudio();
       hideDiagnostic();
+
+      // Ensure previous socket connection is completely closed to avoid duplicate listeners
+      if (state.socket) {
+        try {
+          state.socket.disconnect();
+        } catch (e) {}
+        state.socket = null;
+      }
 
       const cleanUsername = username.replace(/^@/, '').replace(/\s+/g, '').trim();
       updateConnectionUI('connecting', `Đang kết nối tới @${cleanUsername}...`);

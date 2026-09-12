@@ -581,9 +581,33 @@ async function startServer() {
       };
       sharedStreams.set(cleanUsername, stream);
 
+      const recentServerEvents = new Map<string, number>();
+      const isDuplicateServerEvent = (key: string, ttlMs: number = 30000): boolean => {
+        const now = Date.now();
+        const lastTime = recentServerEvents.get(key);
+        if (lastTime && (now - lastTime) < ttlMs) {
+          return true;
+        }
+        recentServerEvents.set(key, now);
+        if (recentServerEvents.size > 300) {
+          for (const [k, time] of recentServerEvents.entries()) {
+            if (now - time > 60000) recentServerEvents.delete(k);
+          }
+        }
+        return false;
+      };
+
       tiktokConnection.on('chat' as any, (data: any) => {
         const user = extractUserInfo(data);
-        const commentContent = data.comment || data.text || data.content || '';
+        const commentContent = (data.comment || data.text || data.content || '').trim();
+        const eventKey = `chat:${user.uniqueId.toLowerCase()}:${commentContent.toLowerCase()}`;
+
+        // Deduplicate identical comments from same user within 30 seconds
+        if (isDuplicateServerEvent(eventKey, 30000)) {
+          console.log(`[Server Deduplicate 30s] Ignoring duplicate chat from @${user.uniqueId}: "${commentContent}"`);
+          return;
+        }
+
         io.to(`room_${cleanUsername}`).emit('chat', {
           nickname: user.nickname,
           uniqueId: user.uniqueId,
@@ -594,6 +618,12 @@ async function startServer() {
 
       tiktokConnection.on('follow' as any, (data: any) => {
         const user = extractUserInfo(data);
+        const eventKey = `follow:${user.uniqueId.toLowerCase()}`;
+
+        if (isDuplicateServerEvent(eventKey, 15000)) {
+          return;
+        }
+
         io.to(`room_${cleanUsername}`).emit('follow', {
           nickname: user.nickname,
           uniqueId: user.uniqueId,
@@ -607,6 +637,11 @@ async function startServer() {
         const user = extractUserInfo(data);
 
         if (displayType.includes('follow') || label.includes('follow') || data.eventTypeName === 'follow') {
+          const eventKey = `follow:${user.uniqueId.toLowerCase()}`;
+          if (isDuplicateServerEvent(eventKey, 15000)) {
+            return;
+          }
+
           io.to(`room_${cleanUsername}`).emit('follow', {
             nickname: user.nickname,
             uniqueId: user.uniqueId,
