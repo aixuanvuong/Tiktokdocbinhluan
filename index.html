@@ -1028,6 +1028,21 @@
       const clean = typeof processedText.normalize === 'function' ? processedText.normalize('NFKD') : processedText;
       return clean
         .replace(/[:;"'@#_]/g, ' ')
+    }
+
+    /**
+     * Sanitizes username for TTS playback.
+     * Strips emojis, emoticons, and symbols WITHOUT converting them to Vietnamese words.
+     */
+    function sanitizeUsernameForTTS(username) {
+      if (!username) return '';
+      const stripped = username
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/<3|\(y\)|:\)|:\(|:\/|:v|:D|:P|;\)|\^\^/gi, '');
+
+      const clean = typeof stripped.normalize === 'function' ? stripped.normalize('NFKD') : stripped;
+      return clean
+        .replace(/[:;"'@#_]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
     }
@@ -1100,7 +1115,7 @@
         if (type === 'chat' && state.tts.readChat) {
           const rawComment = content ? content.trim() : '';
           const cleanComment = sanitizeForTTS(rawComment) || 'gửi nhãn dán';
-          const cleanName = sanitizeForTTS(username) || 'Người dùng';
+          const cleanName = sanitizeUsernameForTTS(username) || 'Người dùng';
 
           const template = state.tts.chatTemplate || 'noi';
           if (template === 'binhluan') {
@@ -1113,7 +1128,7 @@
             textToSpeak = `${cleanName} nói ${cleanComment}`;
           }
         } else if (type === 'follow' && state.tts.readFollow) {
-          const cleanName = sanitizeForTTS(username) || 'Người dùng';
+          const cleanName = sanitizeUsernameForTTS(username) || 'Người dùng';
           textToSpeak = `Cảm ơn ${cleanName} đã follow`;
         }
 
@@ -1586,7 +1601,7 @@
     /* ==========================================================================
        5. SIMULATION MODE
        ========================================================================== */
-    const sampleUsers = ['Thu Hà', 'Minh Tuấn', 'Ngọc Ánh', 'Hoàng Nam', 'Bích Phương', 'Thành Long', 'Hải Yến', 'Quang Huy'];
+    const sampleUsers = ['Thu Hà ❤️', 'Minh Tuấn 🔥', 'Ngọc Ánh ✨', 'Hoàng Nam 👍', 'Bích Phương 🌹', 'Thành Long 😎'];
     const sampleComments = [
       'Chào shop nha ❤️🔥, áo này còn màu đen không ạ?',
       'Cho mình xin giá sản phẩm với shop ơi! 👍👍',
