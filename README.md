@@ -44,9 +44,9 @@ DOMAIN=live.yourdomain.com EMAIL=admin@yourdomain.com ./setup.sh
 
 ---
 
-## 🛠️ LỆNH QUẢN LÝ HỆ THỐNG TRÊN TERMINAL (`tiktokxv`)
+## 🛠️ LỆNH QUẢN LÝ HỆ THỐNG TRÊN TERMINAL UBUNTU (`tiktokxv`)
 
-Sau khi cài đặt xong, bạn có thể gõ duy nhất câu lệnh này bất cứ lúc nào trên Terminal:
+Sau khi cài đặt xong, bạn có thể gõ duy nhất câu lệnh này bất cứ lúc nào trên Terminal của Server Ubuntu:
 
 ```bash
 tiktokxv
@@ -58,16 +58,27 @@ Màn hình sẽ hiển thị Menu tương tác quản lý trực quan:
 ======================================================
    🎵 TIKTOK LIVE READER - QUẢN LÝ HỆ THỐNG (tiktokxv)   
 ======================================================
-Vui lòng chọn thao tác:
+Vui lòng chọn thao tác quản lý trên Server Ubuntu:
 
-  [1] 🔄 Cài đặt lại toàn bộ hệ thống (Reinstall)
-  [2] 📊 Kiểm tra trạng thái Server (Check Server Status)
-  [3] 🌐 Kiểm tra kết nối với Tên miền (Check Domain Connection)
-  [4] ✏️  Thay đổi Tên miền (Change Domain)
-  [5] 🚀 Cập nhật phiên bản mới nhất từ GitHub (Update)
-  [6] 🛑 Dừng / Khởi chạy / Restart Server (Manage Server)
+  [1] 🔄 Cài đặt lại toàn bộ hệ thống (Reinstall App)
+  [2] ⚡ Tự động khởi động theo hệ thống Ubuntu (Configure Auto-Start on Boot)
+  [3] 📊 Kiểm tra trạng thái Server & Logs (Check Server Status)
+  [4] 🌐 Kiểm tra kết nối Tên miền & Cloudflare (Check Domain Connection)
+  [5] ✏️  Thay đổi Tên miền (Change Domain)
+  [6] 🚀 Cập nhật phiên bản mới nhất từ GitHub (Update)
+  [7] 🛑 Dừng / Khởi chạy / Restart Server (Manage Server)
+  [8] 💥 Xóa bỏ hoàn toàn ứng dụng khỏi Server (Uninstall & Purge)
   [0] 🚪 Thoát
 ```
+
+### 📌 Chi tiết 2 tính năng chính trên Server Menu:
+1. **[2] Tự động khởi động theo hệ thống Ubuntu (`Configure Auto-Start on Boot`):**
+   - Kích hoạt hoặc hủy bỏ dịch vụ `Systemd` / `PM2 Startup`.
+   - Giúp ứng dụng tự động chạy ngầm ngay khi máy chủ Ubuntu reboot / khởi động lại.
+2. **[8] Xóa bỏ hoàn toàn ứng dụng khỏi Server (`Uninstall & Purge`):**
+   - Dừng tiến trình và gỡ dịch vụ khỏi Systemd.
+   - Xóa tệp cấu hình Nginx Reverse Proxy, gỡ bỏ lệnh CLI `tiktokxv`.
+   - Xóa sạch toàn bộ thư mục tệp tin mã nguồn ứng dụng khỏi máy chủ Ubuntu khi xác nhận.
 
 ---
 

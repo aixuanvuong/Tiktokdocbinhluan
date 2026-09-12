@@ -31,26 +31,117 @@ show_header() {
 
 show_menu() {
     show_header
-    echo -e "${YELLOW}Vui lòng chọn thao tác:${NC}\n"
-    echo -e "  ${GREEN}[1]${NC} 🔄 Cài đặt lại toàn bộ hệ thống (Reinstall)"
-    echo -e "  ${GREEN}[2]${NC} 📊 Kiểm tra trạng thái Server (Check Server Status)"
-    echo -e "  ${GREEN}[3]${NC} 🌐 Kiểm tra kết nối với Tên miền (Check Domain Connection)"
-    echo -e "  ${GREEN}[4]${NC} ✏️  Thay đổi Tên miền (Change Domain)"
-    echo -e "  ${GREEN}[5]${NC} 🚀 Cập nhật phiên bản mới nhất từ GitHub (Update)"
-    echo -e "  ${GREEN}[6]${NC} 🛑 Dừng / Khởi chạy / Restart Server (Manage Server)"
+    echo -e "${YELLOW}Vui lòng chọn thao tác quản lý trên Server Ubuntu:${NC}\n"
+    echo -e "  ${GREEN}[1]${NC} 🔄 Cài đặt lại toàn bộ hệ thống (Reinstall App)"
+    echo -e "  ${GREEN}[2]${NC} ⚡ Tự động khởi động theo hệ thống Ubuntu (Configure Auto-Start on Boot)"
+    echo -e "  ${GREEN}[3]${NC} 📊 Kiểm tra trạng thái Server & Logs (Check Server Status)"
+    echo -e "  ${GREEN}[4]${NC} 🌐 Kiểm tra kết nối Tên miền & Cloudflare (Check Domain Connection)"
+    echo -e "  ${GREEN}[5]${NC} ✏️  Thay đổi Tên miền (Change Domain)"
+    echo -e "  ${GREEN}[6]${NC} 🚀 Cập nhật phiên bản mới nhất từ GitHub (Update)"
+    echo -e "  ${GREEN}[7]${NC} 🛑 Dừng / Khởi chạy / Restart Server (Manage Server)"
+    echo -e "  ${RED}[8]${NC} 💥 Xóa bỏ hoàn toàn ứng dụng khỏi Server (Uninstall & Purge)"
     echo -e "  ${RED}[0]${NC} 🚪 Thoát\n"
     echo -e "${CYAN}------------------------------------------------------${NC}"
-    read -p "👉 Nhập lựa chọn [0-6]: " choice
+    read -p "👉 Nhập lựa chọn [0-8]: " choice
     case $choice in
         1) reinstall_app ;;
-        2) check_server_status ;;
-        3) check_domain_status ;;
-        4) change_domain ;;
-        5) update_app ;;
-        6) toggle_server ;;
+        2) configure_autostart ;;
+        3) check_server_status ;;
+        4) check_domain_status ;;
+        5) change_domain ;;
+        6) update_app ;;
+        7) toggle_server ;;
+        8) uninstall_app ;;
         0) echo -e "\n${GREEN}Cảm ơn bạn đã sử dụng TikTok Live Reader! Tạm biệt!${NC}\n"; exit 0 ;;
         *) echo -e "\n${RED}Lựa chọn không hợp lệ!${NC}"; sleep 1.5; show_menu ;;
     esac
+}
+
+configure_autostart() {
+    show_header
+    echo -e "${CYAN}⚡ TỰ ĐỘNG KHỞI ĐỘNG CÙNG HỆ THỐNG UBUNTU (SYSTEMD / PM2 STARTUP):${NC}\n"
+    echo -e "  ${GREEN}[1]${NC} 🚀 Kích hoạt (BẬT) tự động khởi động cùng hệ thống Ubuntu"
+    echo -e "  ${RED}[2]${NC} 🛑 Hủy bỏ (TẮT) tự động khởi động cùng hệ thống"
+    echo -e "  ${YELLOW}[0]${NC} ⬅️  Quay lại menu chính\n"
+    read -p "👉 Nhập lựa chọn [0-2]: " a_choice
+    case $a_choice in
+        1)
+            echo -e "\n${YELLOW}👉 Đang lưu danh sách tiến trình và tạo dịch vụ khởi động Systemd...${NC}"
+            pm2 save
+            sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || pm2 startup || true
+            pm2 save
+            echo -e "\n${GREEN}✅ ĐÃ BẬT TÍNH NĂNG TỰ ĐỘNG KHỞI ĐỘNG CÙNG SERVER UBUNTU THÀNH CÔNG!${NC}"
+            echo -e "Khi Server Ubuntu reboot/bật máy, dịch vụ TikTok Live Reader sẽ tự động chạy ngầm."
+            ;;
+        2)
+            echo -e "\n${YELLOW}👉 Đang gỡ bỏ dịch vụ tự động khởi động PM2 khỏi Systemd...${NC}"
+            pm2 unstartup systemd 2>/dev/null || pm2 unstartup || true
+            echo -e "\n${YELLOW}🛑 ĐÃ TẮT TỰ ĐỘNG KHỞI ĐỘNG CÙNG HỆ THỐNG.${NC}"
+            ;;
+        0)
+            show_menu
+            return
+            ;;
+        *)
+            echo -e "${RED}Lựa chọn không hợp lệ!${NC}"
+            ;;
+    esac
+    read -p "Nhấn [Enter] để quay lại menu..."
+    show_menu
+}
+
+uninstall_app() {
+    show_header
+    echo -e "${RED}======================================================${NC}"
+    echo -e "${BOLD}${RED} ⚠️ XÓA BỎ HOÀN TOÀN ỨNG DỤNG KHỎI SERVER UBUNTU ${NC}"
+    echo -e "${RED}======================================================${NC}\n"
+    echo -e "${YELLOW}Cảnh báo: Thao tác này sẽ:${NC}"
+    echo -e "  1. Dừng và gỡ bỏ dịch vụ PM2 (${CYAN}tiktok-live-reader${NC})"
+    echo -e "  2. Gỡ bỏ tự động khởi động cùng hệ thống Ubuntu"
+    echo -e "  3. Xóa tệp cấu hình Nginx Reverse Proxy & SSL nếu có"
+    echo -e "  4. Gỡ bỏ lệnh ${CYAN}tiktokxv${NC} khỏi hệ thống /usr/local/bin"
+    echo -e "  5. (Tùy chọn) Xóa toàn bộ thư mục tệp tin mã nguồn ứng dụng trên máy chủ\n"
+    
+    read -p "👉 Bạn có CHẮC CHẮN muốn xóa ứng dụng khỏi Server Ubuntu? [gõ 'YES' để xác nhận]: " confirm_purge
+    if [ "$confirm_purge" == "YES" ] || [ "$confirm_purge" == "yes" ]; then
+        echo -e "\n${YELLOW}👉 [1/5] Đang dừng tiến trình PM2...${NC}"
+        pm2 stop tiktok-live-reader 2>/dev/null || true
+        pm2 delete tiktok-live-reader 2>/dev/null || true
+        pm2 save 2>/dev/null || true
+
+        echo -e "${YELLOW}👉 [2/5] Đang hủy tự động khởi động Systemd...${NC}"
+        pm2 unstartup systemd 2>/dev/null || pm2 unstartup 2>/dev/null || true
+
+        echo -e "${YELLOW}👉 [3/5] Đang xóa cấu hình Nginx...${NC}"
+        if [ -f "/etc/nginx/sites-available/tiktok-live-reader" ]; then
+            sudo rm -f /etc/nginx/sites-enabled/tiktok-live-reader 2>/dev/null || true
+            sudo rm -f /etc/nginx/sites-available/tiktok-live-reader 2>/dev/null || true
+            sudo systemctl reload nginx 2>/dev/null || true
+            echo -e "   ${GREEN}✓ Đã dọn dẹp cấu hình Nginx site.${NC}"
+        fi
+
+        echo -e "${YELLOW}👉 [4/5] Đang xóa lệnh CLI tiktokxv khỏi system...${NC}"
+        sudo rm -f /usr/local/bin/tiktokxv 2>/dev/null || true
+
+        echo -e "${YELLOW}👉 [5/5] Bạn có muốn XÓA THƯ MỤC MÃ NGUỒN (${APP_DIR}) không?${NC}"
+        read -p "Nhập 'DELETE' để xóa sạch thư mục mã nguồn (hoặc nhấn Enter để giữ lại tệp mã nguồn): " del_dir
+        if [ "$del_dir" == "DELETE" ] || [ "$del_dir" == "delete" ]; then
+            echo -e "${RED}Đang xóa thư mục ${APP_DIR}...${NC}"
+            cd /tmp && rm -rf "$APP_DIR" 2>/dev/null || sudo rm -rf "$APP_DIR" 2>/dev/null || true
+            echo -e "${GREEN}✅ Đã xóa sạch thư mục mã nguồn!${NC}"
+        else
+            echo -e "${CYAN}Thư mục mã nguồn được giữ lại tại: ${APP_DIR}${NC}"
+        fi
+
+        echo -e "\n${GREEN}======================================================${NC}"
+        echo -e "${GREEN}🎉 ĐÃ XÓA BỎ ỨNG DỤNG KHỎI SERVER UBUNTU THÀNH CÔNG!${NC}"
+        echo -e "${GREEN}======================================================${NC}\n"
+        exit 0
+    else
+        echo -e "\n${CYAN}Đã hủy thao tác xóa ứng dụng.${NC}"
+    fi
+    read -p "Nhấn [Enter] để quay lại menu..."
+    show_menu
 }
 
 reinstall_app() {

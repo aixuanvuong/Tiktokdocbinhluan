@@ -83,16 +83,29 @@ function extractUserInfo(data: any) {
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
+  // High-Concurrency Socket.IO configuration with shared stream pool
   const io = new SocketIOServer(server, {
     cors: {
       origin: '*',
       methods: ['GET', 'POST']
-    }
+    },
+    pingTimeout: 20000,
+    pingInterval: 10000,
+    maxHttpBufferSize: 1e6,
+    transports: ['websocket', 'polling']
   });
 
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
+
+  // Static assets caching header for production/dist performance
+  app.use((req, res, next) => {
+    if (req.url.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff2)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+    next();
+  });
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
@@ -241,7 +254,8 @@ async function startServer() {
           displayName: user.displayName,
           role: user.role,
           status: user.status,
-          savedTikTokIds: user.savedTikTokIds
+          savedTikTokIds: user.savedTikTokIds,
+          autoStartSystem: user.autoStartSystem || false
         }
       });
     } catch (err: any) {
@@ -260,7 +274,8 @@ async function startServer() {
         displayName: user.displayName,
         role: user.role,
         status: user.status,
-        savedTikTokIds: user.savedTikTokIds
+        savedTikTokIds: user.savedTikTokIds,
+        autoStartSystem: user.autoStartSystem || false
       }
     });
   });
@@ -304,10 +319,10 @@ async function startServer() {
     }
   });
 
-  // 5. Update Profile & Change Password
+  // 5. Update Profile, Auto-Start Settings & Change Password
   app.post('/api/user/profile', authMiddleware, (req: any, res) => {
     try {
-      const { displayName, currentPassword, newPassword } = req.body || {};
+      const { displayName, currentPassword, newPassword, autoStartSystem } = req.body || {};
       const users = getUsers();
       const uIndex = users.findIndex(u => u.username.toLowerCase() === req.user.username.toLowerCase());
       
@@ -323,6 +338,11 @@ async function startServer() {
         if (cleanName.length > 0) {
           user.displayName = cleanName;
         }
+      }
+
+      // Update Auto-Start setting if provided
+      if (typeof autoStartSystem === 'boolean') {
+        user.autoStartSystem = autoStartSystem;
       }
 
       // Change Password if newPassword provided
@@ -356,12 +376,58 @@ async function startServer() {
           displayName: user.displayName,
           role: user.role,
           status: user.status,
-          savedTikTokIds: user.savedTikTokIds
+          savedTikTokIds: user.savedTikTokIds,
+          autoStartSystem: user.autoStartSystem || false
         }
       });
     } catch (err: any) {
       console.error('Update profile error:', err);
       res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật thông tin.' });
+    }
+  });
+
+  // 6. Delete User Account from Server
+  app.post('/api/user/delete-account', authMiddleware, (req: any, res) => {
+    try {
+      const { confirmPassword } = req.body || {};
+      const users = getUsers();
+      const uIndex = users.findIndex(u => u.username.toLowerCase() === req.user.username.toLowerCase());
+
+      if (uIndex === -1) {
+        return res.status(404).json({ error: 'Tài khoản không tồn tại.' });
+      }
+
+      const user = users[uIndex];
+
+      // Verify Password before deletion
+      if (!confirmPassword) {
+        return res.status(400).json({ error: 'Vui lòng nhập mật khẩu hiện tại để xác nhận xóa dữ liệu khỏi server.' });
+      }
+
+      const hash = hashPassword(confirmPassword, user.salt);
+      if (hash !== user.passwordHash) {
+        return res.status(400).json({ error: 'Mật khẩu xác nhận không chính xác.' });
+      }
+
+      // If Admin, ensure not deleting the last active admin
+      if (user.role === 'admin') {
+        const activeAdmins = users.filter(u => u.role === 'admin' && u.status === 'active');
+        if (activeAdmins.length <= 1) {
+          return res.status(400).json({ error: 'Không thể xóa tài khoản Admin duy nhất của ứng dụng!' });
+        }
+      }
+
+      // Delete user from database
+      users.splice(uIndex, 1);
+      saveUsers(users);
+
+      res.json({
+        success: true,
+        message: 'Tài khoản và dữ liệu cá nhân đã được xóa hoàn toàn khỏi server TikTok XV.'
+      });
+    } catch (err: any) {
+      console.error('Delete account error:', err);
+      res.status(500).json({ error: 'Lỗi hệ thống khi xóa ứng dụng/dữ liệu khỏi server.' });
     }
   });
 
@@ -438,124 +504,169 @@ async function startServer() {
     }
   });
 
-  // Track active TikTok connections per socket
-  const userConnections = new Map<string, TikTokLiveConnection>();
+  // Shared TikTok Live Stream Pool for High Multi-User Concurrency
+  interface SharedTikTokStream {
+    connection: TikTokLiveConnection;
+    subscribers: Set<string>;
+    connectedRoomId?: string;
+    isConnecting: boolean;
+  }
+
+  const sharedStreams = new Map<string, SharedTikTokStream>();
+  const socketCurrentRoom = new Map<string, string>();
+
+  const leaveRoom = (socketId: string) => {
+    const currentRoom = socketCurrentRoom.get(socketId);
+    if (!currentRoom) return;
+
+    socketCurrentRoom.delete(socketId);
+    const stream = sharedStreams.get(currentRoom);
+
+    if (stream) {
+      stream.subscribers.delete(socketId);
+      console.log(`[StreamPool] Socket ${socketId} left room @${currentRoom}. Remaining subscribers: ${stream.subscribers.size}`);
+
+      if (stream.subscribers.size === 0) {
+        console.log(`[StreamPool] Tearing down inactive TikTok connection for @${currentRoom}`);
+        try {
+          stream.connection.disconnect();
+        } catch (e) {
+          console.error(`Error disconnecting TikTok stream for @${currentRoom}:`, e);
+        }
+        sharedStreams.delete(currentRoom);
+      }
+    }
+  };
 
   io.on('connection', (socket) => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
-    const disconnectTikTok = () => {
-      const existingConn = userConnections.get(socket.id);
-      if (existingConn) {
-        try {
-          existingConn.disconnect();
-        } catch (e) {
-          console.error('Error disconnecting TikTok stream:', e);
-        }
-        userConnections.delete(socket.id);
-      }
-    };
-
     socket.on('setUniqueId', async (uniqueId: string) => {
-      disconnectTikTok();
+      leaveRoom(socket.id);
 
-      // Remove leading @, internal spaces, and trim
-      const cleanUsername = (uniqueId || '').replace(/^@/, '').replace(/\s+/g, '').trim();
+      const cleanUsername = (uniqueId || '').replace(/^@/, '').replace(/\s+/g, '').trim().toLowerCase();
       if (!cleanUsername) {
         socket.emit('tiktok_error', 'Vui lòng nhập TikTok Unique ID hợp lệ.');
         return;
       }
 
-      console.log(`[TikTok] Connecting socket ${socket.id} to user: ${cleanUsername}`);
+      socketCurrentRoom.set(socket.id, cleanUsername);
+      socket.join(`room_${cleanUsername}`);
+
+      let stream = sharedStreams.get(cleanUsername);
+
+      if (stream) {
+        stream.subscribers.add(socket.id);
+        console.log(`[StreamPool] Reusing existing TikTok connection for @${cleanUsername} (Total listeners: ${stream.subscribers.size})`);
+
+        if (stream.connectedRoomId) {
+          socket.emit('connected', {
+            roomId: stream.connectedRoomId,
+            uniqueId: cleanUsername
+          });
+        }
+        return;
+      }
+
+      console.log(`[StreamPool] Initializing new shared TikTok connection for @${cleanUsername}`);
+      const tiktokConnection = new TikTokLiveConnection(cleanUsername, {
+        processInitialData: false,
+        enableExtendedGiftInfo: false
+      });
+
+      stream = {
+        connection: tiktokConnection,
+        subscribers: new Set([socket.id]),
+        isConnecting: true
+      };
+      sharedStreams.set(cleanUsername, stream);
+
+      tiktokConnection.on('chat' as any, (data: any) => {
+        const user = extractUserInfo(data);
+        const commentContent = data.comment || data.text || data.content || '';
+        io.to(`room_${cleanUsername}`).emit('chat', {
+          nickname: user.nickname,
+          uniqueId: user.uniqueId,
+          comment: commentContent,
+          profilePictureUrl: user.profilePictureUrl
+        });
+      });
+
+      tiktokConnection.on('follow' as any, (data: any) => {
+        const user = extractUserInfo(data);
+        io.to(`room_${cleanUsername}`).emit('follow', {
+          nickname: user.nickname,
+          uniqueId: user.uniqueId,
+          profilePictureUrl: user.profilePictureUrl
+        });
+      });
+
+      tiktokConnection.on('social' as any, (data: any) => {
+        const displayType = (data.displayType || '').toLowerCase();
+        const label = (data.label || '').toLowerCase();
+        const user = extractUserInfo(data);
+
+        if (displayType.includes('follow') || label.includes('follow') || data.eventTypeName === 'follow') {
+          io.to(`room_${cleanUsername}`).emit('follow', {
+            nickname: user.nickname,
+            uniqueId: user.uniqueId,
+            profilePictureUrl: user.profilePictureUrl
+          });
+        }
+      });
+
+      tiktokConnection.on('streamEnd' as any, () => {
+        console.log(`[TikTok] Stream ended for @${cleanUsername}`);
+        io.to(`room_${cleanUsername}`).emit('streamEnd');
+        const s = sharedStreams.get(cleanUsername);
+        if (s) {
+          try { s.connection.disconnect(); } catch {}
+          sharedStreams.delete(cleanUsername);
+        }
+      });
+
+      tiktokConnection.on('disconnected' as any, () => {
+        console.log(`[TikTok] Disconnected from @${cleanUsername}`);
+        io.to(`room_${cleanUsername}`).emit('disconnected');
+      });
+
+      tiktokConnection.on('error' as any, (err: any) => {
+        console.error(`[TikTok Error] @${cleanUsername}:`, err);
+        const rawErrStr = typeof err === 'string' ? err : (err?.message || err?.info || JSON.stringify(err) || '');
+        
+        if (rawErrStr.includes('Failed to fetch room gifts') || rawErrStr.includes('fetchWebcastSignatureFromEulerRoute') || rawErrStr.includes('SignatureMissingTokensError')) {
+          return;
+        }
+
+        const errMsg = formatTikTokErrorMessage(err, cleanUsername);
+        io.to(`room_${cleanUsername}`).emit('tiktok_error', errMsg);
+      });
 
       try {
-        const tiktokConnection = new TikTokLiveConnection(cleanUsername, {
-          processInitialData: false,
-          enableExtendedGiftInfo: false
-        });
-
-        userConnections.set(socket.id, tiktokConnection);
-
-        tiktokConnection.on('chat' as any, (data: any) => {
-          const user = extractUserInfo(data);
-          const commentContent = data.comment || data.text || data.content || '';
-          console.log(`[TikTok Chat] ${user.nickname} (@${user.uniqueId}): ${commentContent}`);
-          socket.emit('chat', {
-            nickname: user.nickname,
-            uniqueId: user.uniqueId,
-            comment: commentContent,
-            profilePictureUrl: user.profilePictureUrl
-          });
-        });
-
-        tiktokConnection.on('follow' as any, (data: any) => {
-          const user = extractUserInfo(data);
-          console.log(`[TikTok Follow] ${user.nickname} (@${user.uniqueId})`);
-          socket.emit('follow', {
-            nickname: user.nickname,
-            uniqueId: user.uniqueId,
-            profilePictureUrl: user.profilePictureUrl
-          });
-        });
-
-        tiktokConnection.on('social' as any, (data: any) => {
-          const displayType = (data.displayType || '').toLowerCase();
-          const label = (data.label || '').toLowerCase();
-          const user = extractUserInfo(data);
-          console.log(`[TikTok Social] ${user.nickname}: ${label || displayType}`);
-
-          if (displayType.includes('follow') || label.includes('follow') || data.eventTypeName === 'follow') {
-            socket.emit('follow', {
-              nickname: user.nickname,
-              uniqueId: user.uniqueId,
-              profilePictureUrl: user.profilePictureUrl
-            });
-          }
-        });
-
-        tiktokConnection.on('streamEnd' as any, () => {
-          console.log(`[TikTok] Stream ended for ${cleanUsername}`);
-          socket.emit('streamEnd');
-          disconnectTikTok();
-        });
-
-        tiktokConnection.on('disconnected' as any, () => {
-          console.log(`[TikTok] Disconnected from ${cleanUsername}`);
-          socket.emit('disconnected');
-        });
-
-        tiktokConnection.on('error' as any, (err: any) => {
-          console.error(`[TikTok Error] ${cleanUsername}:`, err);
-          const rawErrStr = typeof err === 'string' ? err : (err?.message || err?.info || JSON.stringify(err) || '');
-          
-          // Ignore non-fatal gift fetching or signature errors that do not affect chat or follow
-          if (rawErrStr.includes('Failed to fetch room gifts') || rawErrStr.includes('fetchWebcastSignatureFromEulerRoute') || rawErrStr.includes('SignatureMissingTokensError')) {
-            console.warn(`[TikTok Non-Fatal Gift Warning] @${cleanUsername}: ${rawErrStr}`);
-            return;
-          }
-
-          const errMsg = formatTikTokErrorMessage(err, cleanUsername);
-          socket.emit('tiktok_error', errMsg);
-        });
-
         const stateData = await tiktokConnection.connect();
-        console.log(`[TikTok Connected] Room ID: ${stateData.roomId} for @${cleanUsername}`);
-        socket.emit('connected', {
+        console.log(`[TikTok Connected] Shared Room ID: ${stateData.roomId} for @${cleanUsername}`);
+        if (stream) {
+          stream.connectedRoomId = stateData.roomId;
+          stream.isConnecting = false;
+        }
+
+        io.to(`room_${cleanUsername}`).emit('connected', {
           roomId: stateData.roomId,
           uniqueId: cleanUsername
         });
-
       } catch (err: any) {
         console.error(`[TikTok Connect Exception] @${cleanUsername}:`, err);
         const errMsg = formatTikTokErrorMessage(err, cleanUsername);
-        socket.emit('tiktok_error', errMsg);
-        disconnectTikTok();
+        io.to(`room_${cleanUsername}`).emit('tiktok_error', errMsg);
+        
+        try { tiktokConnection.disconnect(); } catch {}
+        sharedStreams.delete(cleanUsername);
       }
     });
 
     socket.on('disconnect', () => {
       console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
-      disconnectTikTok();
+      leaveRoom(socket.id);
     });
   });
 
