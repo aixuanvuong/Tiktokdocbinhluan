@@ -246,7 +246,7 @@
               <i data-lucide="activity" class="w-8 h-8 text-slate-600"></i>
             </div>
             <p class="text-sm font-medium text-slate-400">Chưa có sự kiện nào từ TikTok Live</p>
-            <p class="text-xs text-slate-600 max-w-xs mt-1">Hãy chắc chắn rằng tài khoản TikTok bạn nhập <strong class="text-slate-400">ĐANG PHÁT LIVESTREAM THỰC TẾ</strong> lúc này, hoặc bấm <strong class="text-purple-400">"Chạy Giả Lập Test"</strong> để xem thử ngay.</p>
+            <p class="text-xs text-slate-600 max-w-xs mt-1">Hãy chắc chắn rằng tài khoản TikTok bạn nhập <strong class="text-slate-400">ĐANG PHÁT LIVESTREAM THỰC TẾ</strong> lúc này</p>
           </div>
         </div>
 
@@ -357,6 +357,14 @@
                 <span class="text-xs text-slate-200 font-medium">Bật Đọc Lượt Follow</span>
               </div>
               <span class="text-[11px] text-pink-400 italic">Cảm ơn [Tên] đã follow</span>
+            </label>
+
+            <label class="flex items-center justify-between p-2.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+              <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-parse-icons" checked class="rounded border-slate-700 bg-slate-900 text-purple-500 focus:ring-purple-500 w-4 h-4" />
+                <span class="text-xs text-slate-200 font-medium">Dịch & Đọc Icon / Emoji Sang Tiếng Việt</span>
+              </div>
+              <span class="text-[11px] text-purple-400 italic">❤️ ➔ "trái tim"</span>
             </label>
           </div>
 
@@ -868,6 +876,7 @@
         volume: 1.0,
         readChat: true,
         readFollow: true,
+        parseIcons: localStorage.getItem('tiktok_tts_parse_icons') !== 'false',
         chatTemplate: 'noi'
       },
 
@@ -898,15 +907,127 @@
     }
 
     /**
-     * Sanitizes text for TTS playback. Removes colons, semicolons, and emojis
-     * that cause Google Translate TTS / SpeechSynthesis to break or cut off prematurely.
+     * Converts Emojis, Emoticons, and TikTok Icons into natural Vietnamese words for TTS.
+     * Categorized by emotions, gestures, celebrations, gifts, and symbols.
+     */
+    function parseIconsAndEmojisToText(text) {
+      if (!text) return '';
+      let str = text;
+
+      // 1. ASCII Text Emoticons
+      str = str
+        .replace(/<3/g, ' trái tim ')
+        .replace(/\(y\)/gi, ' thích ')
+        .replace(/:\)/g, ' mặt cười ')
+        .replace(/:\(/g, ' mặt buồn ')
+        .replace(/:\//g, ' phân vân ')
+        .replace(/:v/gi, ' mặt cười ')
+        .replace(/:D/g, ' cười tươi ')
+        .replace(/:P/gi, ' lé lưỡi ')
+        .replace(/;\)/g, ' nháy mắt ')
+        .replace(/\^\^/g, ' cười hi hi ');
+
+      // 2. Comprehensive Unicode Emoji & Symbol Categories
+      const emojiMap = [
+        // Cười & Hài hước
+        { regex: /[\u{1F600}\u{1F601}\u{1F602}\u{1F603}\u{1F604}\u{1F605}\u{1F606}\u{1F923}\u{1F638}\u{1F639}\u{1F924}]/gu, name: 'cười haha' },
+        { regex: /[\u{1F921}]/gu, name: 'mặt hề' },
+        { regex: /[\u{1F4A9}]/gu, name: 'biểu tượng vui' },
+        { regex: /[\u{1F47B}]/gu, name: 'con ma' },
+        
+        // Yêu thương & Tim
+        { regex: /[\u{1F60A}\u{1F970}\u{1F60D}\u{1F618}\u{1F617}\u{1F619}\u{1F61A}\u{1F973}\u{1F979}]/gu, name: 'thả tim' },
+        { regex: /[\u{2764}\u{1F496}\u{1F497}\u{1F493}\u{1F494}\u{1F495}\u{1F498}\u{1F49D}\u{1F5A4}\u{1F90D}\u{1F90E}\u{1F49B}\u{1F499}\u{1F49A}\u{1F49C}\u{1F49F}\u{2763}\u{1F49E}\u{1F926}\u{1F90F}]/gu, name: 'trái tim' },
+        { regex: /[\u{1F48B}\u{1F484}]/gu, name: 'nụ hôn' },
+
+        // Cử chỉ tay & Thao tác
+        { regex: /[\u{1F44D}\u{1F919}]/gu, name: 'thích' },
+        { regex: /[\u{1F44E}]/gu, name: 'không thích' },
+        { regex: /[\u{1F44F}]/gu, name: 'vỗ tay' },
+        { regex: /[\u{1F64F}]/gu, name: 'cảm ơn' },
+        { regex: /[\u{1F91F}\u{1F91E}]/gu, name: 'bắn tim' },
+        { regex: /[\u{1F91D}]/gu, name: 'bắt tay' },
+        { regex: /[\u{1F4AA}]/gu, name: 'mạnh mẽ' },
+        { regex: /[\u{1F44B}\u{270C}\u{1F590}\u{270B}]/gu, name: 'vẫy tay' },
+        { regex: /[\u{2705}\u{2714}\u{1F44C}]/gu, name: 'đồng ý' },
+        { regex: /[\u{1F448}\u{1F449}\u{1F446}\u{1F447}]/gu, name: 'chỉ tay' },
+
+        // Cảm xúc tiêu cực / Khóc / Giận
+        { regex: /[\u{1F62D}\u{1F98A}\u{1F97A}\u{1F622}\u{1F625}\u{1F660}\u{1F4A7}]/gu, name: 'mặt khóc' },
+        { regex: /[\u{1F621}\u{1F92C}\u{1F624}\u{1F620}\u{1F47F}]/gu, name: 'tức giận' },
+        { regex: /[\u{1F631}\u{1F632}\u{1F62E}\u{1F92F}\u{1F633}\u{1F640}]/gu, name: 'bất ngờ' },
+        { regex: /[\u{1F634}\u{1F4A4}\u{1F971}]/gu, name: 'buồn ngủ' },
+        { regex: /[\u{1F914}\u{1F9D0}\u{1F928}]/gu, name: 'suy nghĩ' },
+        { regex: /[\u{1F60E}\u{1F576}]/gu, name: 'ngầu quá' },
+        { regex: /[\u{1F648}\u{1F649}\u{1F64A}]/gu, name: 'che mặt' },
+        { regex: /[\u{1F644}]/gu, name: 'bĩu môi' },
+        { regex: /[\u{1F929}]/gu, name: 'hào hứng' },
+
+        // Quà tặng, Lễ hội, TikTok Live Quà & Hiệu ứng
+        { regex: /[\u{1F525}\u{1F30B}]/gu, name: 'thả lửa' },
+        { regex: /[\u{1F389}\u{1F388}\u{1F22F}\u{2728}\u{1F31F}\u{2B50}\u{1F387}\u{1F386}]/gu, name: 'ăn mừng' },
+        { regex: /[\u{1F339}\u{1F338}\u{1F33B}\u{1F490}\u{1F940}\u{1F337}\u{1F340}]/gu, name: 'hoa hồng' },
+        { regex: /[\u{1F381}\u{1F380}]/gu, name: 'hộp quà' },
+        { regex: /[\u{1F4B8}\u{1F4B0}\u{1F4B5}\u{1F911}\u{1F4B3}]/gu, name: 'thả tiền' },
+        { regex: /[\u{1F4AF}]/gu, name: '100 điểm' },
+        { regex: /[\u{1F451}\u{1F48E}\u{1F3C6}\u{1F947}\u{1F948}\u{1F949}]/gu, name: 'vương miện' },
+        { regex: /[\u{1F440}\u{1F441}]/gu, name: 'nhìn ngó' },
+        { regex: /[\u{1F697}\u{1F3CE}\u{2708}\u{1F680}\u{1F6F8}]/gu, name: 'siêu xe' }
+      ];
+
+      for (const item of emojiMap) {
+        str = str.replace(item.regex, ` ${item.name} `);
+      }
+
+      // 3. Fallback for any unmapped special emojis / symbols
+      const unmappedEmojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+      str = str.replace(unmappedEmojiRegex, ' biểu tượng ');
+
+      // 4. Collapse consecutive duplicate words (e.g. 5 hearts -> "nhiều trái tim")
+      const words = str.split(/\s+/).filter(Boolean);
+      if (words.length === 0) return '';
+
+      const result = [];
+      let i = 0;
+      while (i < words.length) {
+        const word = words[i];
+        let count = 1;
+        while (i + count < words.length && words[i + count].toLowerCase() === word.toLowerCase()) {
+          count++;
+        }
+
+        if (count >= 3) {
+          result.push(`nhiều ${word}`);
+          i += count;
+        } else {
+          result.push(word);
+          i++;
+        }
+      }
+
+      return result.join(' ');
+    }
+
+    /**
+     * Sanitizes text for TTS playback.
+     * When parseIcons is enabled, converts icons & emojis to Vietnamese words.
+     * When disabled, strips emojis and emoticons without translating them.
      */
     function sanitizeForTTS(text) {
       if (!text) return '';
-      let clean = typeof text.normalize === 'function' ? text.normalize('NFKD') : text;
+      let processedText = text;
+
+      if (state.tts && state.tts.parseIcons) {
+        processedText = parseIconsAndEmojisToText(text);
+      } else {
+        processedText = text
+          .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+          .replace(/<3|\(y\)|:\)|:\(|:\/|:v|:D|:P|;\)|\^\^/gi, '');
+      }
+
+      const clean = typeof processedText.normalize === 'function' ? processedText.normalize('NFKD') : processedText;
       return clean
         .replace(/[:;"'@#_]/g, ' ')
-        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
         .replace(/\s+/g, ' ')
         .trim();
     }
@@ -1467,12 +1588,12 @@
        ========================================================================== */
     const sampleUsers = ['Thu Hà', 'Minh Tuấn', 'Ngọc Ánh', 'Hoàng Nam', 'Bích Phương', 'Thành Long', 'Hải Yến', 'Quang Huy'];
     const sampleComments = [
-      'Chào shop nha, áo này còn màu đen không ạ?',
-      'Cho mình xin giá sản phẩm với shop ơi!',
-      'Shop tư vấn chiều cao 1m65 nặng 55kg mặc size gì ạ?',
-      'Đã đặt hàng rồi nha shop!',
-      'Giao hàng về Hà Nội mất mấy ngày vậy ạ?',
-      'Sản phẩm đẹp quá mọi người ơi nên mua nha'
+      'Chào shop nha ❤️🔥, áo này còn màu đen không ạ?',
+      'Cho mình xin giá sản phẩm với shop ơi! 👍👍',
+      'Shop tư vấn chiều cao 1m65 nặng 55kg mặc size gì ạ? 😊',
+      'Đã đặt hàng rồi nha shop! 🎉🥳',
+      'Giao hàng về Hà Nội mất mấy ngày vậy ạ? 🌹',
+      'Sản phẩm đẹp quá mọi người ơi nên mua nha! 😍🔥'
     ];
 
     function toggleSimulation() {
@@ -1723,6 +1844,12 @@
       state.tts.readChat = document.getElementById('toggle-read-chat').checked;
       state.tts.readFollow = document.getElementById('toggle-read-follow').checked;
 
+      const parseIconsEl = document.getElementById('toggle-parse-icons');
+      if (parseIconsEl) {
+        state.tts.parseIcons = parseIconsEl.checked;
+        localStorage.setItem('tiktok_tts_parse_icons', state.tts.parseIcons ? 'true' : 'false');
+      }
+
       const templateEl = document.getElementById('select-chat-template');
       if (templateEl) {
         state.tts.chatTemplate = templateEl.value;
@@ -1755,6 +1882,11 @@
 
     document.getElementById('toggle-read-chat').addEventListener('change', updateTTSConfig);
     document.getElementById('toggle-read-follow').addEventListener('change', updateTTSConfig);
+    const parseIconsEl = document.getElementById('toggle-parse-icons');
+    if (parseIconsEl) {
+      parseIconsEl.checked = state.tts.parseIcons;
+      parseIconsEl.addEventListener('change', updateTTSConfig);
+    }
 
     function testSpeech() {
       unlockAudio();
