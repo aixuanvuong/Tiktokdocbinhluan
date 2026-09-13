@@ -1161,10 +1161,8 @@
         this.isSpeaking = true;
         updateTTSStatusUI('Đang đọc...', 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20');
 
-        // Check whether to use Online Google Voice or Local Browser Voice
-        const useOnline = state.tts.useOnlineTTS || !state.tts.voice;
-
-        if (useOnline) {
+        // Strictly respect whether user selected Online TTS or Local System Voice
+        if (state.tts.useOnlineTTS) {
           this.speakOnline(item.text);
         } else {
           this.speakLocal(item.text);
@@ -1178,8 +1176,8 @@
         const encodedText = encodeURIComponent(shortText);
 
         const engine = state.tts.onlineEngine || 'google_standard';
-        // Route through our local server-side TTS proxy to bypass CORS/Referrer blocks
-        const url = `/api/tts?text=${encodedText}&engine=${encodeURIComponent(engine)}`;
+        // Route through local server-side TTS proxy with cache-busting timestamp
+        const url = `/api/tts?text=${encodedText}&engine=${encodeURIComponent(engine)}&t=${Date.now()}`;
 
         let finished = false;
         let fallbackTriggered = false;
@@ -1189,7 +1187,7 @@
           fallbackTriggered = true;
           if (this.speakTimeout) clearTimeout(this.speakTimeout);
           this.currentAudio = null;
-          console.warn('Online TTS failed, triggering local browser speech synthesis fallback.');
+          console.warn('Online TTS failed, triggering temporary local speech fallback for this item.');
           this.speakLocal(shortText);
         };
 
@@ -1204,31 +1202,12 @@
         };
 
         try {
-          // If a Microsoft Neural option is selected, check if browser has native Microsoft Neural voice
-          if (state.tts.onlineEngine && state.tts.onlineEngine.startsWith('ms_')) {
-            const systemVoices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
-            let targetMsName = 'HoaiMy';
-            if (state.tts.onlineEngine === 'ms_namminh') targetMsName = 'NamMinh';
-            if (state.tts.onlineEngine === 'ms_an') targetMsName = 'An';
-
-            const msVoice = systemVoices.find(v => 
-              v.name.toLowerCase().includes(targetMsName.toLowerCase()) || 
-              (v.name.toLowerCase().includes('microsoft') && v.lang.toLowerCase().includes('vi'))
-            );
-
-            if (msVoice) {
-              state.tts.voice = msVoice;
-              this.speakLocal(shortText);
-              return;
-            }
-          }
-
           const audio = new Audio(url);
           
-          // Speed & Tone adjustments based on selected engine
+          // Speed adjustments based on selected engine
           let speedFactor = state.tts.rate;
           if (state.tts.onlineEngine === 'google_fast') speedFactor *= 1.15;
-          if (state.tts.onlineEngine === 'ms_namminh') speedFactor *= 0.95; // Warm male pacing
+          if (state.tts.onlineEngine === 'ms_namminh') speedFactor *= 0.95;
           
           audio.playbackRate = Math.min(Math.max(speedFactor, 0.7), 1.8);
           audio.volume = state.tts.volume;
@@ -1236,7 +1215,7 @@
 
           audio.onended = done;
           audio.onerror = (e) => {
-            console.warn('Online TTS endpoint error, falling back to local speech:', e);
+            console.warn('Online TTS endpoint error:', e);
             triggerFallback();
           };
 
@@ -1288,8 +1267,18 @@
           utterance.volume = state.tts.volume;
           utterance.lang = 'vi-VN';
 
-          if (state.tts.voice) {
-            utterance.voice = state.tts.voice;
+          // Strictly resolve target voice dynamically
+          let targetVoice = state.tts.voice;
+          if (!targetVoice && state.tts.voiceName) {
+            const currentVoices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+            targetVoice = currentVoices.find(v => v.name === state.tts.voiceName);
+          }
+          if (!targetVoice) {
+            targetVoice = getVietnameseVoice();
+          }
+
+          if (targetVoice) {
+            utterance.voice = targetVoice;
           }
 
           // Keep instance reference to prevent Chrome V8 Garbage Collection from cancelling speech mid-sentence
@@ -1306,11 +1295,11 @@
             done();
           };
 
-          // Generous dynamic safety timeout based on text length
-          const dynamicTimeout = Math.max(25000, Math.ceil(text.length / 3) * 1000 + 15000);
+          const dynamicTimeout = Math.max(15000, Math.ceil(text.length / 3) * 1000 + 8000);
           this.speakTimeout = setTimeout(() => {
             if (!finished) {
               console.warn(`Local speech timeout after ${dynamicTimeout}ms`);
+              try { this.synth.cancel(); } catch (e) {}
               done();
             }
           }, dynamicTimeout);
@@ -1375,22 +1364,31 @@
     }
 
     function applyVoiceSelection(selectedVal, voices) {
+      if (!selectedVal) selectedVal = 'online_google_vi';
+
       if (selectedVal.startsWith('online_google_')) {
         state.tts.useOnlineTTS = true;
         state.tts.voice = null;
+        state.tts.voiceName = null;
         if (selectedVal === 'online_google_vi_fast') state.tts.onlineEngine = 'google_fast';
         else if (selectedVal === 'online_google_vi_deep') state.tts.onlineEngine = 'google_deep';
         else state.tts.onlineEngine = 'google_standard';
       } else if (selectedVal.startsWith('online_ms_')) {
         state.tts.useOnlineTTS = true;
         state.tts.voice = null;
+        state.tts.voiceName = null;
         state.tts.onlineEngine = selectedVal.replace('online_ms_', 'ms_');
       } else if (selectedVal.startsWith('local:')) {
         state.tts.useOnlineTTS = false;
         state.tts.onlineEngine = null;
         const voiceName = selectedVal.replace('local:', '');
-        const found = voices.find(v => v.name === voiceName);
-        if (found) state.tts.voice = found;
+        state.tts.voiceName = voiceName;
+        const found = (voices || []).find(v => v.name === voiceName);
+        if (found) {
+          state.tts.voice = found;
+        } else {
+          state.tts.voice = getVietnameseVoice();
+        }
       }
     }
 

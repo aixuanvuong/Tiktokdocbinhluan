@@ -111,7 +111,7 @@ async function startServer() {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
-  // Server-side High-Reliability TTS Proxy (Bypasses browser CORS & referrer policies)
+  // Server-side High-Reliability TTS Proxy with Native Microsoft Edge & Google Support
   app.get('/api/tts', async (req, res) => {
     try {
       const text = (req.query.text as string || '').trim();
@@ -125,46 +125,77 @@ async function startServer() {
       const shortText = text.length > 180 ? text.substring(0, 180) : text;
       const encoded = encodeURIComponent(shortText);
 
-      let ttsUrls: string[] = [];
-
-      if (engine === 'google_fast') {
-        ttsUrls = [
-          `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=gtx`,
-          `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`
-        ];
-      } else {
-        // Default google_standard and fallback for other online engines
-        ttsUrls = [
-          `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`,
-          `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=gtx`
-        ];
-      }
-
       let audioBuffer: Buffer | null = null;
 
-      for (const url of ttsUrls) {
+      // 1. Try Microsoft Edge Neural Voices
+      if (engine.startsWith('ms_')) {
+        let msVoiceName = 'vi-VN-HoaiMyNeural';
+        if (engine === 'ms_namminh') msVoiceName = 'vi-VN-NamMinhNeural';
+        if (engine === 'ms_an') msVoiceName = 'vi-VN-HoaiMyNeural';
+
         try {
-          const response = await fetch(url, {
+          const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'><voice name='${msVoiceName}'><prosody pitch='0Hz' rate='0%'>${shortText}</prosody></voice></speak>`;
+          const msRes = await fetch('https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?trustedclienttoken=6A5AA1D4EA5E4071A406830501861937', {
+            method: 'POST',
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-              'Referer': 'https://translate.google.com/'
-            }
+              'Content-Type': 'application/ssml+xml',
+              'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0'
+            },
+            body: ssml
           });
 
-          if (response.ok) {
-            const ab = await response.arrayBuffer();
-            if (ab.byteLength > 100) {
+          if (msRes.ok) {
+            const ab = await msRes.arrayBuffer();
+            if (ab.byteLength > 200) {
               audioBuffer = Buffer.from(ab);
-              break;
             }
           }
-        } catch (fetchErr) {
-          console.warn(`[TTS Proxy] Fetch failed for ${url}:`, fetchErr);
+        } catch (msErr) {
+          console.warn('[MS Edge TTS Fetch Error]:', msErr);
+        }
+      }
+
+      // 2. Fallback or direct fetch for Google Translate TTS
+      if (!audioBuffer) {
+        let ttsUrls: string[] = [];
+
+        if (engine === 'google_fast') {
+          ttsUrls = [
+            `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=gtx`,
+            `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`
+          ];
+        } else {
+          ttsUrls = [
+            `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`,
+            `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=gtx`
+          ];
+        }
+
+        for (const url of ttsUrls) {
+          try {
+            const response = await fetch(url, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Referer': 'https://translate.google.com/'
+              }
+            });
+
+            if (response.ok) {
+              const ab = await response.arrayBuffer();
+              if (ab.byteLength > 100) {
+                audioBuffer = Buffer.from(ab);
+                break;
+              }
+            }
+          } catch (fetchErr) {
+            console.warn(`[TTS Proxy] Fetch failed for ${url}:`, fetchErr);
+          }
         }
       }
 
       if (!audioBuffer) {
-        return res.status(502).send('Unable to generate TTS audio from online services.');
+        return res.status(502).send('Unable to generate TTS audio.');
       }
 
       res.setHeader('Content-Type', 'audio/mpeg');
