@@ -870,7 +870,9 @@
       
       tts: {
         voice: null,
+        voiceId: localStorage.getItem('tiktok_tts_voice_id') || 'online_google_vi',
         useOnlineTTS: true,
+        onlineEngine: 'google_standard',
         rate: 1.0,
         pitch: 1.0,
         volume: 1.0,
@@ -1170,10 +1172,14 @@
       }
 
       speakOnline(text) {
-        // Truncate to 180 chars for Google Translate TTS API limit
-        const shortText = text.length > 180 ? text.substring(0, 180) + '...' : text;
+        // Pre-clean text for maximum TTS smoothness & zero stuttering
+        const cleanText = (text || '').replace(/\.+/g, '.').replace(/\s+/g, ' ').trim();
+        const shortText = cleanText.length > 180 ? cleanText.substring(0, 180) + '...' : cleanText;
         const encodedText = encodeURIComponent(shortText);
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=vi&client=tw-ob`;
+
+        const engine = state.tts.onlineEngine || 'google_standard';
+        // Route through our local server-side TTS proxy to bypass CORS/Referrer blocks
+        const url = `/api/tts?text=${encodedText}&engine=${encodeURIComponent(engine)}`;
 
         let finished = false;
         let fallbackTriggered = false;
@@ -1183,6 +1189,7 @@
           fallbackTriggered = true;
           if (this.speakTimeout) clearTimeout(this.speakTimeout);
           this.currentAudio = null;
+          console.warn('Online TTS failed, triggering local browser speech synthesis fallback.');
           this.speakLocal(shortText);
         };
 
@@ -1197,23 +1204,47 @@
         };
 
         try {
+          // If a Microsoft Neural option is selected, check if browser has native Microsoft Neural voice
+          if (state.tts.onlineEngine && state.tts.onlineEngine.startsWith('ms_')) {
+            const systemVoices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+            let targetMsName = 'HoaiMy';
+            if (state.tts.onlineEngine === 'ms_namminh') targetMsName = 'NamMinh';
+            if (state.tts.onlineEngine === 'ms_an') targetMsName = 'An';
+
+            const msVoice = systemVoices.find(v => 
+              v.name.toLowerCase().includes(targetMsName.toLowerCase()) || 
+              (v.name.toLowerCase().includes('microsoft') && v.lang.toLowerCase().includes('vi'))
+            );
+
+            if (msVoice) {
+              state.tts.voice = msVoice;
+              this.speakLocal(shortText);
+              return;
+            }
+          }
+
           const audio = new Audio(url);
-          audio.playbackRate = Math.min(Math.max(state.tts.rate, 0.8), 1.5);
+          
+          // Speed & Tone adjustments based on selected engine
+          let speedFactor = state.tts.rate;
+          if (state.tts.onlineEngine === 'google_fast') speedFactor *= 1.15;
+          if (state.tts.onlineEngine === 'ms_namminh') speedFactor *= 0.95; // Warm male pacing
+          
+          audio.playbackRate = Math.min(Math.max(speedFactor, 0.7), 1.8);
           audio.volume = state.tts.volume;
           this.currentAudio = audio;
 
           audio.onended = done;
           audio.onerror = (e) => {
-            console.warn('Online Google TTS error, falling back to local speech:', e);
+            console.warn('Online TTS endpoint error, falling back to local speech:', e);
             triggerFallback();
           };
 
-          // Dynamic timeout based on text length
-          const dynamicTimeout = Math.max(25000, Math.ceil(shortText.length / 3) * 1000 + 15000);
+          const dynamicTimeout = Math.max(15000, Math.ceil(shortText.length / 3) * 1000 + 8000);
           this.speakTimeout = setTimeout(() => {
             if (!finished && !fallbackTriggered) {
               console.warn(`Online TTS timeout after ${dynamicTimeout}ms`);
-              done();
+              triggerFallback();
             }
           }, dynamicTimeout);
 
@@ -1328,7 +1359,7 @@
     const ttsQueue = new SpeechQueueManager();
 
     /* ==========================================================================
-       2. WEB SPEECH API & ONLINE TTS VOICE SELECTION (VIETNAMESE)
+       2. WEB SPEECH API & ONLINE TTS VOICE SELECTION (VIETNAMESE & MULTI-ENGINE)
        ========================================================================== */
     function getVietnameseVoice() {
       if (!window.speechSynthesis) return null;
@@ -1343,18 +1374,75 @@
       ) || null;
     }
 
+    function applyVoiceSelection(selectedVal, voices) {
+      if (selectedVal.startsWith('online_google_')) {
+        state.tts.useOnlineTTS = true;
+        state.tts.voice = null;
+        if (selectedVal === 'online_google_vi_fast') state.tts.onlineEngine = 'google_fast';
+        else if (selectedVal === 'online_google_vi_deep') state.tts.onlineEngine = 'google_deep';
+        else state.tts.onlineEngine = 'google_standard';
+      } else if (selectedVal.startsWith('online_ms_')) {
+        state.tts.useOnlineTTS = true;
+        state.tts.voice = null;
+        state.tts.onlineEngine = selectedVal.replace('online_ms_', 'ms_');
+      } else if (selectedVal.startsWith('local:')) {
+        state.tts.useOnlineTTS = false;
+        state.tts.onlineEngine = null;
+        const voiceName = selectedVal.replace('local:', '');
+        const found = voices.find(v => v.name === voiceName);
+        if (found) state.tts.voice = found;
+      }
+    }
+
     function populateVoices() {
       const voiceSelect = document.getElementById('voice-select');
       if (!voiceSelect) return;
 
       voiceSelect.innerHTML = '';
 
-      // Google Translate Online Vietnamese Voice (High priority default)
-      const optOnline = document.createElement('option');
-      optOnline.value = 'online_google_vi';
-      optOnline.innerText = '⭐ Google Tiếng Việt (Online - Giọng Nữ Chuẩn & Mượt)';
-      voiceSelect.appendChild(optOnline);
+      // 1. ONLINE GOOGLE VOICES
+      const optGroupGoogle = document.createElement('optgroup');
+      optGroupGoogle.label = "🌐 Giọng Online Google (Trực Tuyến Mượt)";
 
+      const optG1 = document.createElement('option');
+      optG1.value = 'online_google_vi';
+      optG1.innerText = '⭐ Google Tiếng Việt (Online - Giọng Nữ Chuẩn & Ngọt Ngào)';
+      optGroupGoogle.appendChild(optG1);
+
+      const optG2 = document.createElement('option');
+      optG2.value = 'online_google_vi_fast';
+      optG2.innerText = '⚡ Google Tiếng Việt Nhanh (Online - Tốc Độ Cao Cho Chat Đông)';
+      optGroupGoogle.appendChild(optG2);
+
+      const optG3 = document.createElement('option');
+      optG3.value = 'online_google_vi_deep';
+      optG3.innerText = '🎙️ Google Tiếng Việt Trầm (Online - Nhấn Nhá Trực Tuyến)';
+      optGroupGoogle.appendChild(optG3);
+
+      voiceSelect.appendChild(optGroupGoogle);
+
+      // 2. ONLINE MICROSOFT NEURAL VOICES
+      const optGroupMS = document.createElement('optgroup');
+      optGroupMS.label = "🌐 Giọng Online Microsoft (Neural Edge / Azure)";
+
+      const optM1 = document.createElement('option');
+      optM1.value = 'online_ms_hoaimy';
+      optM1.innerText = '🌐 Microsoft Hoài My (Neural Online - Giọng Nữ Truyền Cảm)';
+      optGroupMS.appendChild(optM1);
+
+      const optM2 = document.createElement('option');
+      optM2.value = 'online_ms_namminh';
+      optM2.innerText = '🌐 Microsoft Nam Minh (Neural Online - Giọng Nam Ấm Áp)';
+      optGroupMS.appendChild(optM2);
+
+      const optM3 = document.createElement('option');
+      optM3.value = 'online_ms_an';
+      optM3.innerText = '🌐 Microsoft An (Neural Online - Giọng Nữ Nhẹ Nhàng)';
+      optGroupMS.appendChild(optM3);
+
+      voiceSelect.appendChild(optGroupMS);
+
+      // 3. SYSTEM / DEVICE LOCAL VOICES
       let voices = [];
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         voices = window.speechSynthesis.getVoices() || [];
@@ -1365,11 +1453,11 @@
 
       if (viVoices.length > 0) {
         const optGroupVi = document.createElement('optgroup');
-        optGroupVi.label = "Giọng Tiếng Việt Cục Bộ (Máy tính/Điện thoại)";
+        optGroupVi.label = "💻 Giọng Tiếng Việt Cục Bộ (Máy tính/Điện thoại)";
         viVoices.forEach(voice => {
           const opt = document.createElement('option');
-          opt.value = voice.name;
-          opt.innerText = `${voice.name} (${voice.lang})`;
+          opt.value = `local:${voice.name}`;
+          opt.innerText = `🔊 ${voice.name} (${voice.lang})`;
           optGroupVi.appendChild(opt);
         });
         voiceSelect.appendChild(optGroupVi);
@@ -1377,30 +1465,26 @@
 
       if (otherVoices.length > 0) {
         const optGroupOther = document.createElement('optgroup');
-        optGroupOther.label = "Giọng Cục Bộ Khác";
+        optGroupOther.label = "🌍 Giọng Quốc Tế & Hệ Thống Khác";
         otherVoices.forEach(voice => {
           const opt = document.createElement('option');
-          opt.value = voice.name;
-          opt.innerText = `${voice.name} (${voice.lang})`;
+          opt.value = `local:${voice.name}`;
+          opt.innerText = `🌐 ${voice.name} (${voice.lang})`;
           optGroupOther.appendChild(opt);
         });
         voiceSelect.appendChild(optGroupOther);
       }
 
-      voiceSelect.value = 'online_google_vi';
-      state.tts.useOnlineTTS = true;
-      state.tts.voice = null;
+      // Restore saved voice preference
+      const savedVoiceId = state.tts.voiceId || 'online_google_vi';
+      voiceSelect.value = savedVoiceId;
+      applyVoiceSelection(savedVoiceId, voices);
 
       voiceSelect.onchange = () => {
         const selectedVal = voiceSelect.value;
-        if (selectedVal === 'online_google_vi') {
-          state.tts.useOnlineTTS = true;
-          state.tts.voice = null;
-        } else {
-          state.tts.useOnlineTTS = false;
-          const found = voices.find(v => v.name === selectedVal);
-          if (found) state.tts.voice = found;
-        }
+        state.tts.voiceId = selectedVal;
+        localStorage.setItem('tiktok_tts_voice_id', selectedVal);
+        applyVoiceSelection(selectedVal, voices);
       };
     }
 
@@ -1905,8 +1989,8 @@
 
     function testSpeech() {
       unlockAudio();
+      ttsQueue.clear();
       ttsQueue.enqueue('chat', 'Nguyễn Văn A', 'Thử nghiệm tính năng đọc bình luận TikTok Live bằng giọng nói.');
-      ttsQueue.enqueue('follow', 'Trần Thị B', '');
     }
 
     function clearSpeechQueue() { ttsQueue.clear(); }

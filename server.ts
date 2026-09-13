@@ -111,6 +111,72 @@ async function startServer() {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
+  // Server-side High-Reliability TTS Proxy (Bypasses browser CORS & referrer policies)
+  app.get('/api/tts', async (req, res) => {
+    try {
+      const text = (req.query.text as string || '').trim();
+      const engine = (req.query.engine as string || 'google_standard').trim();
+
+      if (!text) {
+        return res.status(400).send('Missing text parameter');
+      }
+
+      // Truncate to 180 chars for clean chunk speech
+      const shortText = text.length > 180 ? text.substring(0, 180) : text;
+      const encoded = encodeURIComponent(shortText);
+
+      let ttsUrls: string[] = [];
+
+      if (engine === 'google_fast') {
+        ttsUrls = [
+          `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=gtx`,
+          `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`
+        ];
+      } else {
+        // Default google_standard and fallback for other online engines
+        ttsUrls = [
+          `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`,
+          `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=gtx`
+        ];
+      }
+
+      let audioBuffer: Buffer | null = null;
+
+      for (const url of ttsUrls) {
+        try {
+          const response = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'Referer': 'https://translate.google.com/'
+            }
+          });
+
+          if (response.ok) {
+            const ab = await response.arrayBuffer();
+            if (ab.byteLength > 100) {
+              audioBuffer = Buffer.from(ab);
+              break;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn(`[TTS Proxy] Fetch failed for ${url}:`, fetchErr);
+        }
+      }
+
+      if (!audioBuffer) {
+        return res.status(502).send('Unable to generate TTS audio from online services.');
+      }
+
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.send(audioBuffer);
+    } catch (err: any) {
+      console.error('[TTS API Error]:', err);
+      return res.status(500).send('TTS Server Error');
+    }
+  });
+
   // Authentication Middleware Helper
   const authMiddleware = (req: any, res: any, next: any) => {
     const authHeader = req.headers.authorization || '';
