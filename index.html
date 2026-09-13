@@ -870,9 +870,9 @@
       
       tts: {
         voice: null,
-        voiceId: localStorage.getItem('tiktok_tts_voice_id') || 'online_google_vi',
+        voiceId: localStorage.getItem('tiktok_tts_voice_id') || 'online_ms_hoaimy',
         useOnlineTTS: true,
-        onlineEngine: 'google_standard',
+        onlineEngine: 'ms_hoaimy',
         rate: 1.0,
         pitch: 1.0,
         volume: 1.0,
@@ -1049,10 +1049,27 @@
         .trim();
     }
 
+    // Persistent global Web Audio API Context & HTML5 player for iOS / macOS WebKit
+    let globalAudioCtx = null;
+    const sharedAudioPlayer = typeof window !== 'undefined' ? new Audio() : null;
+
+    function getAudioContext() {
+      if (!globalAudioCtx && typeof window !== 'undefined') {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtxClass) {
+          globalAudioCtx = new AudioCtxClass();
+        }
+      }
+      if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+        globalAudioCtx.resume().catch(() => {});
+      }
+      return globalAudioCtx;
+    }
+
     /**
      * Speech Queue Manager
-     * Supports both Online Google Translate TTS (ultra-reliable MP3) and Web Speech API (Local voices)
-     * Includes automatic watchdog reset and error fallback.
+     * Supports both Online Google Translate & Microsoft Neural TTS (ultra-reliable MP3) and Web Speech API (Local voices)
+     * Includes persistent audio player for iOS/macOS Safari compatibility.
      */
     class SpeechQueueManager {
       constructor() {
@@ -1060,6 +1077,7 @@
         this.isSpeaking = false;
         this.synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
         this.currentAudio = null;
+        this.currentSource = null;
         this.currentUtterance = null;
         this.speakTimeout = null;
         this.resumeInterval = null;
@@ -1169,27 +1187,17 @@
         }
       }
 
-      speakOnline(text) {
+      async speakOnline(text) {
         // Pre-clean text for maximum TTS smoothness & zero stuttering
         const cleanText = (text || '').replace(/\.+/g, '.').replace(/\s+/g, ' ').trim();
         const shortText = cleanText.length > 180 ? cleanText.substring(0, 180) + '...' : cleanText;
         const encodedText = encodeURIComponent(shortText);
 
-        const engine = state.tts.onlineEngine || 'google_standard';
+        const engine = state.tts.onlineEngine || 'ms_hoaimy';
         // Route through local server-side TTS proxy with cache-busting timestamp
         const url = `/api/tts?text=${encodedText}&engine=${encodeURIComponent(engine)}&t=${Date.now()}`;
 
         let finished = false;
-        let fallbackTriggered = false;
-
-        const triggerFallback = () => {
-          if (fallbackTriggered || finished) return;
-          fallbackTriggered = true;
-          if (this.speakTimeout) clearTimeout(this.speakTimeout);
-          this.currentAudio = null;
-          console.warn('Online TTS failed, triggering temporary local speech fallback for this item.');
-          this.speakLocal(shortText);
-        };
 
         const done = () => {
           if (finished) return;
@@ -1197,14 +1205,76 @@
           if (this.speakTimeout) clearTimeout(this.speakTimeout);
           this.isSpeaking = false;
           this.currentAudio = null;
+          this.currentSource = null;
           updateTTSStatusUI('Sẵn sàng', 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20');
-          setTimeout(() => this.processNext(), 150);
+          setTimeout(() => this.processNext(), 120);
         };
 
+        const dynamicTimeout = Math.max(15000, Math.ceil(shortText.length / 3) * 1000 + 8000);
+        this.speakTimeout = setTimeout(() => {
+          if (!finished) {
+            console.warn(`Online TTS timeout after ${dynamicTimeout}ms`);
+            done();
+          }
+        }, dynamicTimeout);
+
+        // 1. PRIMARY METHOD: Web Audio API (Fetches raw MP3 buffer & decodes).
+        // Bypasses 100% of iOS / macOS Safari background audio autoplay restrictions!
+        const audioCtx = getAudioContext();
+        if (audioCtx) {
+          try {
+            if (audioCtx.state === 'suspended') {
+              await audioCtx.resume();
+            }
+
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const arrayBuffer = await res.arrayBuffer();
+
+            const audioBuffer = await new Promise((resolve, reject) => {
+              const promise = audioCtx.decodeAudioData(
+                arrayBuffer,
+                (buf) => resolve(buf),
+                (err) => reject(err)
+              );
+              if (promise && typeof promise.then === 'function') {
+                promise.then(resolve).catch(reject);
+              }
+            });
+
+            if (finished) return;
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
+
+            let speedFactor = state.tts.rate;
+            if (state.tts.onlineEngine === 'google_fast') speedFactor *= 1.15;
+            if (state.tts.onlineEngine === 'ms_namminh') speedFactor *= 0.95;
+            source.playbackRate.value = Math.min(Math.max(speedFactor, 0.7), 1.8);
+
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = state.tts.volume;
+
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            source.onended = done;
+            this.currentSource = source;
+
+            source.start(0);
+            return;
+          } catch (webAudioErr) {
+            console.warn('Web Audio API playback failed, falling back to HTML5 Audio:', webAudioErr);
+          }
+        }
+
+        // 2. SECONDARY FALLBACK: Standard HTML5 Audio Player
         try {
-          const audio = new Audio(url);
+          const audio = sharedAudioPlayer || new Audio();
+          try { audio.pause(); } catch (e) {}
+          audio.currentTime = 0;
+          audio.src = url;
           
-          // Speed adjustments based on selected engine
           let speedFactor = state.tts.rate;
           if (state.tts.onlineEngine === 'google_fast') speedFactor *= 1.15;
           if (state.tts.onlineEngine === 'ms_namminh') speedFactor *= 0.95;
@@ -1215,28 +1285,20 @@
 
           audio.onended = done;
           audio.onerror = (e) => {
-            console.warn('Online TTS endpoint error:', e);
-            triggerFallback();
+            console.warn('Online TTS endpoint audio load error:', e);
+            setTimeout(done, 200);
           };
-
-          const dynamicTimeout = Math.max(15000, Math.ceil(shortText.length / 3) * 1000 + 8000);
-          this.speakTimeout = setTimeout(() => {
-            if (!finished && !fallbackTriggered) {
-              console.warn(`Online TTS timeout after ${dynamicTimeout}ms`);
-              triggerFallback();
-            }
-          }, dynamicTimeout);
 
           const playPromise = audio.play();
           if (playPromise !== undefined) {
             playPromise.catch(err => {
-              console.warn('Audio play blocked or failed, falling back:', err);
-              triggerFallback();
+              console.warn('Online Audio play restricted or blocked on macOS/iOS Safari:', err);
+              done();
             });
           }
         } catch (err) {
           console.error('speakOnline exception:', err);
-          triggerFallback();
+          done();
         }
       }
 
@@ -1265,13 +1327,16 @@
           utterance.rate = state.tts.rate;
           utterance.pitch = state.tts.pitch;
           utterance.volume = state.tts.volume;
-          utterance.lang = 'vi-VN';
 
-          // Strictly resolve target voice dynamically
-          let targetVoice = state.tts.voice;
-          if (!targetVoice && state.tts.voiceName) {
-            const currentVoices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+          // Strictly resolve target voice dynamically from fresh system voices
+          const currentVoices = (this.synth.getVoices && this.synth.getVoices()) || [];
+          let targetVoice = null;
+
+          if (state.tts.voiceName) {
             targetVoice = currentVoices.find(v => v.name === state.tts.voiceName);
+          }
+          if (!targetVoice && state.tts.voice) {
+            targetVoice = currentVoices.find(v => v.name === state.tts.voice.name);
           }
           if (!targetVoice) {
             targetVoice = getVietnameseVoice();
@@ -1279,9 +1344,12 @@
 
           if (targetVoice) {
             utterance.voice = targetVoice;
+            utterance.lang = targetVoice.lang || 'vi-VN';
+          } else {
+            utterance.lang = 'vi-VN';
           }
 
-          // Keep instance reference to prevent Chrome V8 Garbage Collection from cancelling speech mid-sentence
+          // Keep instance reference to prevent Chrome V8 / WebKit Garbage Collection from cancelling speech mid-sentence
           this.currentUtterance = utterance;
 
           utterance.onstart = () => {
@@ -1313,6 +1381,10 @@
 
       clear() {
         this.queue = [];
+        if (this.currentSource) {
+          try { this.currentSource.stop(); } catch (e) {}
+          this.currentSource = null;
+        }
         if (this.currentAudio) {
           try { this.currentAudio.pause(); } catch (e) {}
           this.currentAudio = null;
@@ -1364,20 +1436,20 @@
     }
 
     function applyVoiceSelection(selectedVal, voices) {
-      if (!selectedVal) selectedVal = 'online_google_vi';
+      if (!selectedVal) selectedVal = 'online_ms_hoaimy';
 
-      if (selectedVal.startsWith('online_google_')) {
+      if (selectedVal.startsWith('online_ms_')) {
+        state.tts.useOnlineTTS = true;
+        state.tts.voice = null;
+        state.tts.voiceName = null;
+        state.tts.onlineEngine = selectedVal.replace('online_ms_', 'ms_');
+      } else if (selectedVal.startsWith('online_google_')) {
         state.tts.useOnlineTTS = true;
         state.tts.voice = null;
         state.tts.voiceName = null;
         if (selectedVal === 'online_google_vi_fast') state.tts.onlineEngine = 'google_fast';
         else if (selectedVal === 'online_google_vi_deep') state.tts.onlineEngine = 'google_deep';
         else state.tts.onlineEngine = 'google_standard';
-      } else if (selectedVal.startsWith('online_ms_')) {
-        state.tts.useOnlineTTS = true;
-        state.tts.voice = null;
-        state.tts.voiceName = null;
-        state.tts.onlineEngine = selectedVal.replace('online_ms_', 'ms_');
       } else if (selectedVal.startsWith('local:')) {
         state.tts.useOnlineTTS = false;
         state.tts.onlineEngine = null;
@@ -1398,49 +1470,49 @@
 
       voiceSelect.innerHTML = '';
 
-      // 1. ONLINE GOOGLE VOICES
-      const optGroupGoogle = document.createElement('optgroup');
-      optGroupGoogle.label = "🌐 Giọng Online Google (Trực Tuyến Mượt)";
-
-      const optG1 = document.createElement('option');
-      optG1.value = 'online_google_vi';
-      optG1.innerText = '⭐ Google Tiếng Việt (Online - Giọng Nữ Chuẩn & Ngọt Ngào)';
-      optGroupGoogle.appendChild(optG1);
-
-      const optG2 = document.createElement('option');
-      optG2.value = 'online_google_vi_fast';
-      optG2.innerText = '⚡ Google Tiếng Việt Nhanh (Online - Tốc Độ Cao Cho Chat Đông)';
-      optGroupGoogle.appendChild(optG2);
-
-      const optG3 = document.createElement('option');
-      optG3.value = 'online_google_vi_deep';
-      optG3.innerText = '🎙️ Google Tiếng Việt Trầm (Online - Nhấn Nhá Trực Tuyến)';
-      optGroupGoogle.appendChild(optG3);
-
-      voiceSelect.appendChild(optGroupGoogle);
-
-      // 2. ONLINE MICROSOFT NEURAL VOICES
+      // 1. HIGH-QUALITY NEURAL AI VOICES (MICROSOFT EDGE NEURAL)
       const optGroupMS = document.createElement('optgroup');
-      optGroupMS.label = "🌐 Giọng Online Microsoft (Neural Edge / Azure)";
+      optGroupMS.label = "✨ GIỌNG NÓI AI NEURAL CAO CẤP (TỰ NHIÊN NHƯ NGƯỜI THẬT - KHUYÊN DÙNG)";
 
       const optM1 = document.createElement('option');
       optM1.value = 'online_ms_hoaimy';
-      optM1.innerText = '🌐 Microsoft Hoài My (Neural Online - Giọng Nữ Truyền Cảm)';
+      optM1.innerText = '⭐ Microsoft Hoài My (Neural AI - Giọng Nữ Truyền Cảm & Tự Nhiên Nhất)';
       optGroupMS.appendChild(optM1);
 
       const optM2 = document.createElement('option');
       optM2.value = 'online_ms_namminh';
-      optM2.innerText = '🌐 Microsoft Nam Minh (Neural Online - Giọng Nam Ấm Áp)';
+      optM2.innerText = '⭐ Microsoft Nam Minh (Neural AI - Giọng Nam Ấm Áp & Tự Nhiên)';
       optGroupMS.appendChild(optM2);
 
       const optM3 = document.createElement('option');
       optM3.value = 'online_ms_an';
-      optM3.innerText = '🌐 Microsoft An (Neural Online - Giọng Nữ Nhẹ Nhàng)';
+      optM3.innerText = '⭐ Microsoft An (Neural AI - Giọng Nữ Nhẹ Nhàng)';
       optGroupMS.appendChild(optM3);
 
       voiceSelect.appendChild(optGroupMS);
 
-      // 3. SYSTEM / DEVICE LOCAL VOICES
+      // 2. ONLINE GOOGLE VOICES
+      const optGroupGoogle = document.createElement('optgroup');
+      optGroupGoogle.label = "🌐 GIỌNG TRỰC TUYẾN GOOGLE";
+
+      const optG1 = document.createElement('option');
+      optG1.value = 'online_google_vi';
+      optG1.innerText = 'Google Tiếng Việt (Online - Giọng Nữ Standard)';
+      optGroupGoogle.appendChild(optG1);
+
+      const optG2 = document.createElement('option');
+      optG2.value = 'online_google_vi_fast';
+      optG2.innerText = 'Google Tiếng Việt Nhanh (Online - Tốc Độ Cho Chat Đông)';
+      optGroupGoogle.appendChild(optG2);
+
+      const optG3 = document.createElement('option');
+      optG3.value = 'online_google_vi_deep';
+      optG3.innerText = 'Google Tiếng Việt Trầm (Online)';
+      optGroupGoogle.appendChild(optG3);
+
+      voiceSelect.appendChild(optGroupGoogle);
+
+      // 3. SYSTEM / DEVICE LOCAL VOICES (Apple / Windows local)
       let voices = [];
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         voices = window.speechSynthesis.getVoices() || [];
@@ -1451,11 +1523,11 @@
 
       if (viVoices.length > 0) {
         const optGroupVi = document.createElement('optgroup');
-        optGroupVi.label = "💻 Giọng Tiếng Việt Cục Bộ (Máy tính/Điện thoại)";
+        optGroupVi.label = "⚠️ GIỌNG CỤC BỘ APPLE / HỆ THỐNG (CỨNG & MÁY MÓC - KHÔNG KHUYÊN DÙNG)";
         viVoices.forEach(voice => {
           const opt = document.createElement('option');
           opt.value = `local:${voice.name}`;
-          opt.innerText = `🔊 ${voice.name} (${voice.lang})`;
+          opt.innerText = `🔊 ${voice.name} (${voice.lang}) - Giọng Máy Cục Bộ`;
           optGroupVi.appendChild(opt);
         });
         voiceSelect.appendChild(optGroupVi);
@@ -1463,7 +1535,7 @@
 
       if (otherVoices.length > 0) {
         const optGroupOther = document.createElement('optgroup');
-        optGroupOther.label = "🌍 Giọng Quốc Tế & Hệ Thống Khác";
+        optGroupOther.label = "🌍 GIỌNG QUỐC TẾ CỤC BỘ KHÁC";
         otherVoices.forEach(voice => {
           const opt = document.createElement('option');
           opt.value = `local:${voice.name}`;
@@ -1473,8 +1545,8 @@
         voiceSelect.appendChild(optGroupOther);
       }
 
-      // Restore saved voice preference
-      const savedVoiceId = state.tts.voiceId || 'online_google_vi';
+      // Restore saved voice preference (default to online_ms_hoaimy)
+      const savedVoiceId = state.tts.voiceId || 'online_ms_hoaimy';
       voiceSelect.value = savedVoiceId;
       applyVoiceSelection(savedVoiceId, voices);
 
@@ -1493,22 +1565,37 @@
     }
 
     /* ==========================================================================
-       3. AUTOPLAY UNLOCKER
+       3. AUTOPLAY UNLOCKER FOR MACOS & IOS SAFARI
        ========================================================================== */
     function unlockAudio() {
       if (state.audioUnlocked) return;
 
       try {
-        // Unlock HTML5 Audio
-        const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
-        silentAudio.play().catch(() => {});
+        // Unlock Web Audio API context for iOS/macOS WebKit background streaming
+        const ctx = getAudioContext();
+        if (ctx) {
+          ctx.resume();
+          const silentBuffer = ctx.createBuffer(1, 1, 22050);
+          const source = ctx.createBufferSource();
+          source.buffer = silentBuffer;
+          source.connect(ctx.destination);
+          source.start(0);
+        }
 
-        // Unlock SpeechSynthesis without empty string crash
+        // Unlock persistent HTML5 Audio Player on WebKit/Safari
+        if (sharedAudioPlayer) {
+          sharedAudioPlayer.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+          const p = sharedAudioPlayer.play();
+          if (p !== undefined) {
+            p.then(() => {
+              sharedAudioPlayer.pause();
+            }).catch(() => {});
+          }
+        }
+
+        // Unlock SpeechSynthesis for Safari Web Speech API
         if ('speechSynthesis' in window && window.speechSynthesis) {
           window.speechSynthesis.resume();
-          const dummyUtterance = new SpeechSynthesisUtterance('a');
-          dummyUtterance.volume = 0.01;
-          window.speechSynthesis.speak(dummyUtterance);
         }
       } catch (e) {
         console.warn('Unlock audio exception:', e);
@@ -1527,6 +1614,13 @@
         iconStatus.setAttribute('data-lucide', 'volume-2');
         lucide.createIcons();
       }
+    }
+
+    // Auto-bind unlockAudio on any user touch/click/key interaction for seamless macOS & iOS experience
+    if (typeof window !== 'undefined') {
+      ['click', 'touchstart', 'touchend', 'mousedown'].forEach(evtType => {
+        document.addEventListener(evtType, unlockAudio, { passive: true });
+      });
     }
 
     /* ==========================================================================
