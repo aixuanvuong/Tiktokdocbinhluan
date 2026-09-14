@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TikTok XV - OBS & TikTok Live Studio Overlay</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            tiktok: {
+              pink: '#ff0050',
+              cyan: '#00f2fe',
+              gold: '#fbbf24'
+            }
+          },
+          animation: {
+            'bounce-short': 'bounceShort 0.5s ease-out',
+            'shimmer': 'shimmer 2.5s infinite linear',
+            'pulse-glow': 'pulseGlow 2s infinite',
+            'slide-in': 'slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+            'pop-in': 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          },
+          keyframes: {
+            bounceShort: {
+              '0%': { transform: 'translateY(15px) scale(0.95)', opacity: '0' },
+              '60%': { transform: 'translateY(-3px) scale(1.02)', opacity: '1' },
+              '100%': { transform: 'translateY(0) scale(1)', opacity: '1' }
+            },
+            popIn: {
+              '0%': { transform: 'scale(0.7) translateY(20px)', opacity: '0' },
+              '70%': { transform: 'scale(1.05) translateY(-5px)', opacity: '1' },
+              '100%': { transform: 'scale(1) translateY(0)', opacity: '1' }
+            },
+            pulseGlow: {
+              '0%, 100%': { boxShadow: '0 0 15px rgba(255, 0, 80, 0.4)' },
+              '50%': { boxShadow: '0 0 30px rgba(0, 242, 254, 0.7)' }
+            },
+            shimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Socket.IO Client CDN -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <style>
+    /* 100% Alpha Channel Transparency for OBS Browser Source */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Custom Themes */
+    body.theme-transparent {
+      background: transparent !important;
+    }
+    body.theme-green {
+      background: #00ff00 !important; /* Pure Chroma Key Green */
+    }
+    body.theme-magenta {
+      background: #ff00ff !important; /* Pure Chroma Key Magenta */
+    }
+    body.theme-glass {
+      background: rgba(15, 23, 42, 0.85) !important;
+    }
+    body.theme-light {
+      background: rgba(248, 250, 252, 0.9) !important;
+    }
+
+    /* Text Outline Shadows for high legibility over games & webcams */
+    .text-stroke-dark {
+      text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.9),
+        0 0 8px rgba(0, 0, 0, 0.8),
+        -1px -1px 0 rgba(0, 0, 0, 0.8),
+        1px -1px 0 rgba(0, 0, 0, 0.8),
+        -1px 1px 0 rgba(0, 0, 0, 0.8),
+        1px 1px 0 rgba(0, 0, 0, 0.8);
+    }
+
+    .bubble-glass {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .bubble-green-friendly {
+      background: rgba(10, 15, 29, 0.92);
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    }
+
+    .bubble-light {
+      background: rgba(255, 255, 255, 0.92);
+      color: #0f172a;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gift Golden Shimmer */
+    .golden-glow {
+      background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(20, 15, 45, 0.95) 100%);
+      border: 2px solid #fbbf24;
+      box-shadow: 0 0 25px rgba(251, 191, 36, 0.5), inset 0 0 15px rgba(251, 191, 36, 0.2);
+    }
+
+    /* Comment Fade-out Animation */
+    .fade-out {
+      animation: fadeOut 0.4s ease-forward forwards;
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-20px) scale(0.92); }
+    }
+  </style>
+</head>
+<body id="overlay-body" class="theme-transparent text-white antialiased flex flex-col justify-end p-4 md:p-6 overflow-hidden relative">
+
+  <!-- TOP AREA: VIP Gift Alerts & Follow Banners -->
+  <div id="top-alerts-container" class="fixed top-4 left-4 right-4 z-50 flex flex-col items-center space-y-3 pointer-events-none">
+    <!-- Populated dynamically via JS -->
+  </div>
+
+  <!-- FLOATING INTERACT TOOLBAR (Visible on hover or via interact in OBS) -->
+  <div id="overlay-toolbar" class="fixed top-2 right-2 z-40 opacity-0 hover:opacity-100 transition-opacity duration-300 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-2 shadow-2xl flex items-center space-x-2 text-xs">
+    <div class="flex items-center space-x-1 px-2 py-1 bg-slate-800 rounded-lg text-slate-300">
+      <span id="overlay-status-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+      <span id="overlay-status-text" class="font-bold">Chưa kết nối</span>
+    </div>
+
+    <!-- Theme Switcher -->
+    <select id="select-theme" onchange="changeTheme(this.value)" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-xs outline-none">
+      <option value="transparent">Nền Trong suốt (OBS)</option>
+      <option value="green">Màn hình xanh (Chroma)</option>
+      <option value="magenta">Màn tím (Chroma)</option>
+      <option value="glass">Kính mờ Cyber</option>
+      <option value="light">Nền sáng Light</option>
+    </select>
+
+    <!-- Test Action Buttons -->
+    <button onclick="testComment()" class="px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded-lg font-semibold transition" title="Test bình luận">
+      💬 Test Chat
+    </button>
+    <button onclick="testGift()" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg font-semibold transition" title="Test quà tặng VIP">
+      🎁 Test Quà
+    </button>
+    <button onclick="testFollow()" class="px-2.5 py-1 bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 border border-pink-500/40 rounded-lg font-semibold transition" title="Test follow mới">
+      💖 Test Follow
+    </button>
+  </div>
+
+  <!-- MAIN CHAT FEED CONTAINER (Bottom-aligned floating bubbles) -->
+  <div id="chat-feed-container" class="w-full max-w-xl mx-auto flex flex-col justify-end space-y-2.5 relative z-10">
+    <!-- Chat Bubbles will be injected here -->
+  </div>
+
+  <!-- EMPTY / WAITING FOR STREAM TIP (Disappears once events arrive) -->
+  <div id="overlay-tip-box" class="mb-4 mx-auto max-w-md bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl p-4 text-center text-xs text-slate-300 space-y-2 shadow-2xl transition-opacity duration-500">
+    <div class="flex items-center justify-center space-x-2 text-cyan-400 font-bold text-sm">
+      <i data-lucide="video" class="w-4 h-4"></i>
+      <span>OBS &amp; TikTok Live Studio Overlay Sẵn Sàng</span>
+    </div>
+    <p id="overlay-tip-username" class="text-slate-400">
+      Đang chờ kết nối TikTok Live...
+    </p>
+    <p class="text-[11px] text-slate-500 italic">
+      Mẹo: Trong OBS, thêm nguồn <strong>Browser (Trình duyệt)</strong>, chỉnh kích thước <strong>450x700</strong> hoặc <strong>1080x1920</strong>.
+    </p>
+    <div class="pt-1 flex items-center justify-center space-x-2">
+      <button onclick="testComment()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg font-semibold border border-slate-700">
+        Bắn Thử Bình Luận Mẫu
+      </button>
+      <button onclick="hideTip()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg">
+        Ẩn bảng này
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       OBS OVERLAY CONTROLLER
+       ========================================================================== */
+    const params = new URLSearchParams(window.location.search);
+    const config = {
+      id: (params.get('id') || params.get('user') || '').replace(/^@/, '').trim().toLowerCase(),
+      theme: params.get('theme') || 'transparent',
+      fontSize: params.get('fontSize') || 'md',
+      duration: parseInt(params.get('duration') || '8', 10), // seconds before auto-dismiss (0 = keep)
+      maxItems: parseInt(params.get('maxItems') || '5', 10),
+      sound: params.get('sound') === '1',
+      giftsOnly: params.get('giftsOnly') === '1',
+      layout: params.get('layout') || 'bottom',
+      test: params.get('test') === '1'
+    };
+
+    const state = {
+      socket: null,
+      isConnected: false,
+      hasReceivedEvent: false,
+      items: []
+    };
+
+    // DOM Elements
+    const bodyEl = document.getElementById('overlay-body');
+    const chatFeedEl = document.getElementById('chat-feed-container');
+    const alertsEl = document.getElementById('top-alerts-container');
+    const tipBoxEl = document.getElementById('overlay-tip-box');
+    const statusDotEl = document.getElementById('overlay-status-dot');
+    const statusTextEl = document.getElementById('overlay-status-text');
+    const selectThemeEl = document.getElementById('select-theme');
+
+    // Apply Initial Theme
+    function applyTheme(themeName) {
+      bodyEl.className = bodyEl.className.replace(/theme-[a-z]+/g, '').trim();
+      bodyEl.classList.add(`theme-${themeName}`);
+      if (selectThemeEl) selectThemeEl.value = themeName;
+    }
+    applyTheme(config.theme);
+
+    function changeTheme(themeName) {
+      applyTheme(themeName);
+    }
+
+    function hideTip() {
+      if (tipBoxEl) {
+        tipBoxEl.style.opacity = '0';
+        setTimeout(() => tipBoxEl.remove(), 500);
+      }
+    }
+
+    // Update Status Badge
+    function updateStatus(connected, text) {
+      state.isConnected = connected;
+      if (statusDotEl && statusTextEl) {
+        if (connected) {
+          statusDotEl.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+          statusTextEl.innerText = text || `@${config.id} (Live)`;
+          statusTextEl.className = 'font-bold text-emerald-400';
+        } else {
+          statusDotEl.className = 'w-2 h-2 rounded-full bg-slate-500';
+          statusTextEl.innerText = text || 'Chưa kết nối';
+          statusTextEl.className = 'font-bold text-slate-400';
+        }
+      }
+    }
+
+    // Sound player if sound=1
+    function playAlertAudio(text) {
+      if (!config.sound || !text) return;
+      try {
+        const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}&engine=ms_hoaimy`);
+        audio.volume = 0.85;
+        audio.play().catch(() => {});
+      } catch (e) {}
+    }
+
+    /* ==========================================================================
+       RENDER CHAT BUBBLE
+       ========================================================================== */
+    function addChatMessage(data) {
+      if (config.giftsOnly) return;
+      hideTip();
+
+      const bubbleId = 'chat-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+      const nickname = escapeHtml(data.nickname || 'Khán giả');
+      const comment = escapeHtml(data.comment || '');
+      const avatarUrl = data.profilePictureUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces';
+
+      // Font size classes
+      let fontClass = 'text-sm';
+      if (config.fontSize === 'sm') fontClass = 'text-xs';
+      if (config.fontSize === 'lg') fontClass = 'text-base';
+      if (config.fontSize === 'xl') fontClass = 'text-lg';
+
+      // Theme-specific bubble style
+      let cardStyle = 'bubble-glass text-white';
+      if (config.theme === 'green' || config.theme === 'magenta') cardStyle = 'bubble-green-friendly text-white';
+      if (config.theme === 'light') cardStyle = 'bubble-light text-slate-900';
+
+      const bubble = document.createElement('div');
+      bubble.id = bubbleId;
+      bubble.className = `w-full max-w-full rounded-2xl p-3 md:p-3.5 shadow-2xl flex items-start space-x-3 animate-slide-in transition-all duration-300 ${cardStyle}`;
+
+      bubble.innerHTML = `
+        <div class="relative flex-shrink-0">
+          <img 
+            src="${avatarUrl}" 
+            alt="${nickname}" 
+            class="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover border-2 border-cyan-400/80 shadow-md"
+            onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nickname)}&background=00f2fe&color=0f172a&bold=true'"
+          />
+          <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#ff0050] text-[9px] font-black text-white flex items-center justify-center shadow">
+            💬
+          </span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center space-x-2 flex-wrap">
+            <span class="font-extrabold text-xs md:text-sm bg-gradient-to-r from-cyan-300 via-white to-pink-400 bg-clip-text text-transparent truncate max-w-[200px]">
+              ${nickname}
+            </span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              Live Fan
+            </span>
+          </div>
+          <p class="${fontClass} font-medium mt-1 leading-snug break-words ${config.theme === 'light' ? 'text-slate-800' : 'text-slate-100 text-stroke-dark'}">
+            ${comment}
+          </p>
+        </div>
+      `;
+
+      chatFeedEl.appendChild(bubble);
+
+      // Remove oldest if exceeds maxItems
+      while (chatFeedEl.children.length > config.maxItems) {
+        const oldest = chatFeedEl.children[0];
+        if (oldest) oldest.remove();
+      }
+
+      // Auto dismiss after duration seconds
+      if (config.duration > 0) {
+        setTimeout(() => {
+          const el = document.getElementById(bubbleId);
+          if (el) {
+            el.classList.add('fade-out');
+            setTimeout(() => el.remove(), 400);
+          }
+        }, config.duration * 1000);
+      }
+    }
+
+    /* ==========================================================================
+       RENDER VIP GIFT BURST ALERT
+       ========================================================================== */
+    function addGiftAlert(data) {
+      hideTip();
+      const alertId = 'gift-' + Date.now();
+      const nickname = escapeHtml(data.nickname || 'Đại Gia');
+      const giftName = escapeHtml(data.giftName || 'Quà VIP');
+      const count = data.giftCount || 1;
+      const diamondCount = data.diamondCount || 0;
+      const avatarUrl = data.profilePictureUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop';
+      const giftImg = data.giftPictureUrl || 'https://cdn-icons-png.flaticon.com/512/8364/8364673.png';
+
+      const alertEl = document.createElement('div');
+      alertEl.id = alertId;
+      alertEl.className = 'w-full max-w-md rounded-2xl p-4 golden-glow shadow-2xl flex items-center space-x-4 animate-pop-in relative overflow-hidden';
+
+      alertEl.innerHTML = `
+        <!-- Shimmering overlay light -->
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/20 to-transparent w-full h-full animate-shimmer pointer-events-none"></div>
+
+        <div class="relative flex-shrink-0">
+          <img 
+            src="${avatarUrl}" 
+            alt="${nickname}" 
+            class="w-12 h-12 rounded-full object-cover border-2 border-amber-400 shadow-lg"
+            onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nickname)}&background=fbbf24&color=0f172a&bold=true'"
+          />
+          <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center shadow-md">
+            👑
+          </div>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center space-x-2">
+            <span class="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow">
+              VIP TẶNG QUÀ
+            </span>
+            ${diamondCount > 0 ? `<span class="text-[11px] font-extrabold text-amber-300">💎 ${diamondCount}</span>` : ''}
+          </div>
+          <h4 class="font-black text-base text-amber-300 truncate mt-0.5">
+            ${nickname}
+          </h4>
+          <p class="text-xs font-bold text-white leading-tight mt-0.5">
+            Đã tặng <span class="text-amber-400 font-extrabold text-sm uppercase">${giftName}</span>
+          </p>
+        </div>
+
+        <!-- Huge Gift Count Badge & Icon -->
+        <div class="flex flex-col items-center justify-center flex-shrink-0 pl-2 border-l border-amber-500/40">
+          <img src="${giftImg}" class="w-10 h-10 object-contain drop-shadow-[0_0_12px_rgba(251,191,36,0.8)] animate-bounce-short" onerror="this.innerText='🎁'" />
+          <span class="text-lg font-black text-amber-300 tracking-tighter mt-0.5">
+            x${count}
+          </span>
+        </div>
+      `;
+
+      alertsEl.prepend(alertEl);
+      playAlertAudio(`Cảm ơn ${data.nickname} đã tặng ${count} ${data.giftName}`);
+
+      // Auto dismiss after 7 seconds
+      setTimeout(() => {
+        const el = document.getElementById(alertId);
+        if (el) {
+          el.classList.add('fade-out');
+          setTimeout(() => el.remove(), 400);
+        }
+      }, 7000);
+    }
+
+    /* ==========================================================================
+       RENDER FOLLOW BANNER
+       ========================================================================== */
+    function addFollowAlert(data) {
+      hideTip();
+      const alertId = 'follow-' + Date.now();
+      const nickname = escapeHtml(data.nickname || 'Bạn mới');
+      const avatarUrl = data.profilePictureUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop';
+
+      const alertEl = document.createElement('div');
+      alertEl.id = alertId;
+      alertEl.className = 'w-full max-w-sm rounded-xl p-2.5 bg-gradient-to-r from-pink-950/90 via-slate-900/90 to-purple-950/90 border border-pink-500/50 shadow-2xl flex items-center space-x-3 animate-slide-in';
+
+      alertEl.innerHTML = `
+        <img 
+          src="${avatarUrl}" 
+          class="w-8 h-8 rounded-full object-cover border border-pink-400"
+          onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nickname)}&background=ff0050&color=fff'"
+        />
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-white truncate">
+            <span class="text-pink-400 font-extrabold">${nickname}</span> vừa follow kênh!
+          </p>
+        </div>
+        <span class="text-xs">💖</span>
+      `;
+
+      alertsEl.prepend(alertEl);
+
+      setTimeout(() => {
+        const el = document.getElementById(alertId);
+        if (el) {
+          el.classList.add('fade-out');
+          setTimeout(() => el.remove(), 400);
+        }
+      }, 5000);
+    }
+
+    /* ==========================================================================
+       SOCKET.IO CONNECTION
+       ========================================================================== */
+    function initSocket() {
+      state.socket = io({
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 2000,
+        reconnectionAttempts: 100
+      });
+
+      state.socket.on('connect', () => {
+        console.log('[OBS Overlay] Socket connected:', state.socket.id);
+        if (config.id) {
+          state.socket.emit('setUniqueId', config.id);
+          updateStatus(true, `@${config.id} (Đang kết nối)`);
+        } else {
+          updateStatus(false, 'Chưa có ID TikTok');
+        }
+      });
+
+      state.socket.on('connected', (data) => {
+        console.log('[OBS Overlay] TikTok Room Connected:', data);
+        updateStatus(true, `@${data.uniqueId} (Live)`);
+        const tipUser = document.getElementById('overlay-tip-username');
+        if (tipUser) tipUser.innerHTML = `Đang đồng bộ trực tiếp phòng Live: <strong class="text-cyan-400">@${data.uniqueId}</strong>`;
+      });
+
+      state.socket.on('chat', (data) => {
+        addChatMessage(data);
+      });
+
+      state.socket.on('gift', (data) => {
+        addGiftAlert(data);
+      });
+
+      state.socket.on('follow', (data) => {
+        addFollowAlert(data);
+      });
+
+      state.socket.on('tiktok_error', (msg) => {
+        console.warn('[OBS Overlay] TikTok Error:', msg);
+        updateStatus(false, 'Lỗi kết nối TikTok');
+      });
+
+      state.socket.on('disconnect', () => {
+        updateStatus(false, 'Mất kết nối server');
+      });
+    }
+
+    // Helper functions
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Test functions for streamer calibration
+    const sampleNames = ['Minh Tuấn', 'Ngọc Anh', 'Hương Ly', 'Hoàng Bách', 'Trâm Anh', 'Thanh Bình', 'Bảo Hân'];
+    const sampleChats = [
+      'Chào chủ shop nha, áo này còn size L không ạ?',
+      'Shop tư vấn nhiệt tình ghê, đã chốt 2 cái nhé!',
+      'Giao nhanh về Hà Nội kịp thứ 7 không shop ơi?',
+      'Live nét căng luôn, thả tim mỏi cả tay nè ❤️',
+      'Chúc chủ phòng buôn may bán đắt nha!',
+      'Áo màu xanh còn hàng không ạ?'
+    ];
+    const sampleGifts = [
+      { name: 'Hoa Hồng', count: 10, diamonds: 10, img: 'https://cdn-icons-png.flaticon.com/512/3233/3233934.png' },
+      { name: 'Vương Miện', count: 1, diamonds: 500, img: 'https://cdn-icons-png.flaticon.com/512/8364/8364673.png' },
+      { name: 'Pháo Hoa', count: 5, diamonds: 100, img: 'https://cdn-icons-png.flaticon.com/512/3819/3819284.png' }
+    ];
+
+    function testComment() {
+      const name = sampleNames[Math.floor(Math.random() * sampleNames.length)];
+      const text = sampleChats[Math.floor(Math.random() * sampleChats.length)];
+      addChatMessage({
+        nickname: name,
+        comment: text,
+        profilePictureUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&bold=true`
+      });
+    }
+
+    function testGift() {
+      const name = sampleNames[Math.floor(Math.random() * sampleNames.length)];
+      const gift = sampleGifts[Math.floor(Math.random() * sampleGifts.length)];
+      addGiftAlert({
+        nickname: name,
+        giftName: gift.name,
+        giftCount: gift.count,
+        diamondCount: gift.diamonds,
+        giftPictureUrl: gift.img,
+        profilePictureUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=fbbf24&color=0f172a&bold=true`
+      });
+    }
+
+    function testFollow() {
+      const name = sampleNames[Math.floor(Math.random() * sampleNames.length)];
+      addFollowAlert({
+        nickname: name,
+        profilePictureUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ff0050&color=fff&bold=true`
+      });
+    }
+
+    // Auto-run test loop if ?test=1
+    if (config.test) {
+      testComment();
+      setInterval(() => {
+        const rand = Math.random();
+        if (rand < 0.6) testComment();
+        else if (rand < 0.85) testGift();
+        else testFollow();
+      }, 3500);
+    }
+
+    // Initialize Lucide icons & Socket
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    initSocket();
+  </script>
+</body>
+</html>

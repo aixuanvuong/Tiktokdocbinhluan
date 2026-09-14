@@ -11,6 +11,14 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          overlay: path.resolve(__dirname, 'overlay.html'),
+        },
+      },
+    },
     server: {
       allowedHosts: true as const,
       hmr: process.env.DISABLE_HMR !== 'true',

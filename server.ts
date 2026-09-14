@@ -713,6 +713,47 @@ async function startServer() {
         });
       });
 
+      tiktokConnection.on('gift' as any, (data: any) => {
+        const user = extractUserInfo(data);
+        const giftName = data.giftName || data.giftDetails?.giftName || data.describe || 'Quà tặng';
+        const giftCount = data.repeatCount || data.count || 1;
+        const diamondCount = data.diamondCount || 0;
+        const giftPictureUrl = data.giftPictureUrl || data.giftDetails?.giftImage?.urlList?.[0] || '';
+
+        io.to(`room_${cleanUsername}`).emit('gift', {
+          nickname: user.nickname,
+          uniqueId: user.uniqueId,
+          profilePictureUrl: user.profilePictureUrl,
+          giftName,
+          giftCount,
+          diamondCount,
+          giftPictureUrl
+        });
+      });
+
+      tiktokConnection.on('like' as any, (data: any) => {
+        const user = extractUserInfo(data);
+        const likeCount = data.likeCount || 1;
+        const totalLikes = data.totalLikes || 0;
+
+        io.to(`room_${cleanUsername}`).emit('like', {
+          nickname: user.nickname,
+          uniqueId: user.uniqueId,
+          profilePictureUrl: user.profilePictureUrl,
+          likeCount,
+          totalLikes
+        });
+      });
+
+      tiktokConnection.on('share' as any, (data: any) => {
+        const user = extractUserInfo(data);
+        io.to(`room_${cleanUsername}`).emit('share', {
+          nickname: user.nickname,
+          uniqueId: user.uniqueId,
+          profilePictureUrl: user.profilePictureUrl
+        });
+      });
+
       tiktokConnection.on('follow' as any, (data: any) => {
         const user = extractUserInfo(data);
         const eventKey = `follow:${user.uniqueId.toLowerCase()}`;
@@ -800,6 +841,15 @@ async function startServer() {
       console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
       leaveRoom(socket.id);
     });
+  });
+
+  // OBS Studio & TikTok Live Studio Overlay routes
+  app.get(['/overlay', '/overlay.html'], (req, res) => {
+    const isProd = process.env.NODE_ENV === 'production';
+    const filePath = isProd
+      ? path.join(process.cwd(), 'dist', 'overlay.html')
+      : path.join(process.cwd(), 'overlay.html');
+    res.sendFile(filePath);
   });
 
   if (process.env.NODE_ENV !== 'production') {

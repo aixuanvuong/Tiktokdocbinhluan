@@ -84,6 +84,18 @@
 
       <!-- Global Status Badges & Auth Section -->
       <div class="flex flex-wrap items-center gap-3">
+        <!-- OBS Studio / TikTok Live Studio Overlay Button -->
+        <button 
+          id="btn-open-obs-modal" 
+          onclick="openObsOverlayModal()" 
+          class="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 border border-purple-500/40 bg-purple-950/40 text-purple-300 hover:bg-purple-900/60 hover:text-purple-100 transition shadow-sm shadow-purple-500/20 active:scale-95"
+          title="Mở bảng cấu hình và lấy link màn hình OBS / TikTok Live Studio"
+        >
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-400"></i>
+          <span>Màn Hình OBS</span>
+          <span class="px-1.5 py-0.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-[9px] font-black rounded-md uppercase tracking-wider shadow">LIVE</span>
+        </button>
+
         <!-- Autoplay Audio Status -->
         <button id="btn-unlock-audio" onclick="unlockAudio()" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 border transition-all duration-200 bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20">
           <i id="icon-audio-status" data-lucide="volume-x" class="w-4 h-4"></i>
@@ -173,6 +185,16 @@
             >
               <i data-lucide="bookmark-plus" class="w-4 h-4 text-amber-400"></i>
               <span class="hidden sm:inline">Lưu ID</span>
+            </button>
+
+            <!-- OBS Overlay Shortcut Button -->
+            <button 
+              onclick="openObsOverlayModal()" 
+              class="px-3.5 py-3 bg-purple-950/60 hover:bg-purple-905/80 text-purple-300 border border-purple-500/40 rounded-xl text-sm font-semibold flex items-center space-x-1.5 transition active:scale-95 shadow-sm shadow-purple-500/10" 
+              title="Lấy link màn hình nhúng vào OBS Studio hoặc TikTok Live Studio"
+            >
+              <i data-lucide="monitor-play" class="w-4 h-4 text-purple-400"></i>
+              <span class="hidden sm:inline">OBS Overlay</span>
             </button>
           </div>
         </div>
@@ -658,6 +680,198 @@
 
       <div class="pt-2 text-right">
         <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. OBS & TIKTOK LIVE STUDIO OVERLAY GENERATOR MODAL -->
+  <div id="modal-obs-overlay" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 md:p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-5 md:p-6 space-y-5 shadow-2xl relative max-h-[92vh] flex flex-col">
+      <button onclick="closeObsOverlayModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="flex items-center space-x-3 border-b border-slate-800 pb-3.5 flex-shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-100 flex items-center space-x-2">
+            <span>Màn Hình OBS Studio &amp; TikTok Live Studio</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-gradient-to-r from-pink-500 to-purple-500 text-white uppercase">Trong Suốt</span>
+          </h3>
+          <p class="text-xs text-slate-400">Tạo đường link Browser Source hiển thị bình luận, thông báo quà tặng VIP lấp lánh và lượt follow</p>
+        </div>
+      </div>
+
+      <!-- Modal Content (Scrollable) -->
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+
+        <!-- URL Generator Section -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-purple-500/30 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-purple-300 flex items-center space-x-1.5 text-xs">
+              <i data-lucide="link" class="w-3.5 h-3.5"></i>
+              <span>Link Browser Source Dành Cho OBS / Live Studio:</span>
+            </span>
+            <span id="obs-copy-feedback" class="hidden text-emerald-400 font-bold text-[11px] animate-pulse">
+              Đã sao chép vào bộ nhớ tạm!
+            </span>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <input 
+              type="text" 
+              id="obs-overlay-url-input" 
+              readonly 
+              class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-cyan-300 font-mono text-xs select-all focus:outline-none focus:border-purple-500"
+            />
+            <button 
+              onclick="copyObsOverlayUrl()" 
+              class="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-md shadow-purple-500/20 active:scale-95 flex-shrink-0"
+            >
+              <i data-lucide="copy" class="w-4 h-4"></i>
+              <span>Sao Chép Link</span>
+            </button>
+            <button 
+              onclick="openObsOverlayWindow()" 
+              class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 transition flex-shrink-0"
+              title="Mở thử link overlay trong tab mới"
+            >
+              <i data-lucide="external-link" class="w-4 h-4 text-cyan-400"></i>
+              <span>Mở Thử</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Customization Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          
+          <!-- Theme Setting -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+            <label class="block font-semibold text-slate-300">Kiểu Nền (Theme):</label>
+            <select id="obs-opt-theme" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
+              <option value="transparent">Trong Suốt (OBS &amp; Studio)</option>
+              <option value="green">Màn Xanh Lá (Chroma #00FF00)</option>
+              <option value="magenta">Màn Tím (Chroma #FF00FF)</option>
+              <option value="glass">Kính Mờ Cyber Dark</option>
+              <option value="light">Nền Sáng Bán Trong Suốt</option>
+            </select>
+          </div>
+
+          <!-- Auto-hide Duration -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+            <label class="block font-semibold text-slate-300">Thời Gian Hiện Bình Luận:</label>
+            <select id="obs-opt-duration" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
+              <option value="8">8 giây (Khuyên dùng)</option>
+              <option value="5">5 giây (Nhanh)</option>
+              <option value="12">12 giây (Chậm)</option>
+              <option value="0">Giữ nguyên liên tục</option>
+            </select>
+          </div>
+
+          <!-- Font Size -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+            <label class="block font-semibold text-slate-300">Cỡ Chữ Bình Luận:</label>
+            <select id="obs-opt-font" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
+              <option value="md">Vừa (Chuẩn OBS)</option>
+              <option value="sm">Nhỏ</option>
+              <option value="lg">Lớn</option>
+              <option value="xl">Siêu lớn</option>
+            </select>
+          </div>
+
+          <!-- Sound on OBS -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+            <label class="block font-semibold text-slate-300">Âm Thanh Đọc Trên OBS:</label>
+            <select id="obs-opt-sound" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
+              <option value="0">Tắt âm (Khuyên dùng)</option>
+              <option value="1">Bật âm thanh trực tiếp</option>
+            </select>
+          </div>
+
+          <!-- Filter Mode -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+            <label class="block font-semibold text-slate-300">Nội Dung Hiển Thị:</label>
+            <select id="obs-opt-filter" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
+              <option value="0">Tất cả (Chat, Quà, Follow)</option>
+              <option value="1">Chỉ Quà Tặng &amp; Follow VIP</option>
+            </select>
+          </div>
+
+          <!-- Max bubbles -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+            <label class="block font-semibold text-slate-300">Số Bình Luận Tối Đa:</label>
+            <select id="obs-opt-max" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
+              <option value="5">5 bình luận</option>
+              <option value="3">3 bình luận</option>
+              <option value="7">7 bình luận</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Interactive Live Simulation Preview -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="font-bold text-slate-300 flex items-center space-x-1.5">
+              <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Mô Phỏng Trực Tiếp Màn Hình OBS:</span>
+            </span>
+
+            <div class="flex items-center space-x-1.5">
+              <button onclick="triggerObsPreviewTest('chat')" class="px-2.5 py-1 bg-cyan-950 border border-cyan-500/40 text-cyan-300 rounded-lg hover:bg-cyan-900 font-semibold text-[11px] flex items-center space-x-1">
+                <i data-lucide="message-square" class="w-3 h-3"></i>
+                <span>Bắn Chat</span>
+              </button>
+              <button onclick="triggerObsPreviewTest('gift')" class="px-2.5 py-1 bg-amber-950 border border-amber-500/40 text-amber-300 rounded-lg hover:bg-amber-900 font-semibold text-[11px] flex items-center space-x-1">
+                <i data-lucide="gift" class="w-3 h-3"></i>
+                <span>Bắn Quà VIP</span>
+              </button>
+              <button onclick="triggerObsPreviewTest('follow')" class="px-2.5 py-1 bg-pink-950 border border-pink-500/40 text-pink-300 rounded-lg hover:bg-pink-900 font-semibold text-[11px] flex items-center space-x-1">
+                <i data-lucide="user-plus" class="w-3 h-3"></i>
+                <span>Bắn Follow</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Preview Frame with Transparent Checkerboard Pattern -->
+          <div class="w-full h-64 rounded-xl overflow-hidden border border-slate-800 relative bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] bg-slate-950">
+            <iframe id="obs-preview-iframe" src="/overlay.html?test=1" class="w-full h-full border-0"></iframe>
+          </div>
+        </div>
+
+        <!-- 3-Step Setup Instructions -->
+        <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800/80 space-y-2">
+          <span class="font-bold text-slate-300 text-xs flex items-center space-x-1.5">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>Cách Thêm Vào OBS Studio Hoặc TikTok Live Studio Trong 1 Phút:</span>
+          </span>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-slate-400 pt-1">
+            <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+              <strong class="text-cyan-400 block mb-1">Bước 1: Copy Link</strong>
+              Bấm nút "Sao Chép Link" ở ô trên để lấy đường dẫn Overlay đã cấu hình cho kênh của bạn.
+            </div>
+            <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+              <strong class="text-purple-400 block mb-1">Bước 2: Thêm Browser Source</strong>
+              Trong OBS / TikTok Live Studio, tại ô <strong>Nguồn (Sources)</strong> bấm dấu <strong>+</strong> &rarr; Chọn <strong>Browser</strong> (Trình duyệt).
+            </div>
+            <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+              <strong class="text-emerald-400 block mb-1">Bước 3: Dán Link &amp; Kích Thước</strong>
+              Dán link vừa copy vào ô URL. Đặt Chiều rộng: <strong>450</strong>, Chiều cao: <strong>700</strong> &rarr; Bấm <strong>OK</strong>. Xong ngay!
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="pt-2 border-t border-slate-800 flex items-center justify-between flex-shrink-0">
+        <span class="text-[11px] text-slate-500 italic">Mẹo: Bạn có thể mở đồng thời trên nhiều cảnh (Scenes) khác nhau mà không lo tốn CPU.</span>
+        <button onclick="closeObsOverlayModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">
           Đóng
         </button>
       </div>
@@ -2783,6 +2997,111 @@
         }
       } catch (err) {
         alert('Lỗi kết nối máy chủ.');
+      }
+    }
+
+    /* ==========================================================================
+       OBS & TIKTOK LIVE STUDIO OVERLAY FUNCTIONS
+       ========================================================================== */
+    function openObsOverlayModal() {
+      const modal = document.getElementById('modal-obs-overlay');
+      if (modal) {
+        modal.classList.remove('hidden');
+        updateObsOverlayUrl();
+      }
+    }
+
+    function closeObsOverlayModal() {
+      const modal = document.getElementById('modal-obs-overlay');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function getSelectedObsSettings() {
+      const rawInput = document.getElementById('input-tiktok-id')?.value || '';
+      const cleanId = rawInput.replace(/^@/, '').replace(/\s+/g, '').trim().toLowerCase();
+
+      const theme = document.getElementById('obs-opt-theme')?.value || 'transparent';
+      const duration = document.getElementById('obs-opt-duration')?.value || '8';
+      const font = document.getElementById('obs-opt-font')?.value || 'md';
+      const sound = document.getElementById('obs-opt-sound')?.value || '0';
+      const filter = document.getElementById('obs-opt-filter')?.value || '0';
+      const max = document.getElementById('obs-opt-max')?.value || '5';
+
+      return { cleanId, theme, duration, font, sound, filter, max };
+    }
+
+    function buildObsOverlayUrl(includeTest = false) {
+      const s = getSelectedObsSettings();
+      const origin = window.location.origin;
+      const params = new URLSearchParams();
+
+      if (s.cleanId) params.set('id', s.cleanId);
+      if (s.theme !== 'transparent') params.set('theme', s.theme);
+      if (s.duration !== '8') params.set('duration', s.duration);
+      if (s.font !== 'md') params.set('fontSize', s.font);
+      if (s.sound === '1') params.set('sound', '1');
+      if (s.filter === '1') params.set('giftsOnly', '1');
+      if (s.max !== '5') params.set('maxItems', s.max);
+      if (includeTest) params.set('test', '1');
+
+      const queryString = params.toString();
+      return `${origin}/overlay.html${queryString ? '?' + queryString : ''}`;
+    }
+
+    function updateObsOverlayUrl() {
+      const input = document.getElementById('obs-overlay-url-input');
+      const previewIframe = document.getElementById('obs-preview-iframe');
+      const url = buildObsOverlayUrl(false);
+
+      if (input) input.value = url;
+      if (previewIframe) {
+        const previewUrl = buildObsOverlayUrl(true);
+        previewIframe.src = previewUrl;
+      }
+    }
+
+    async function copyObsOverlayUrl() {
+      const input = document.getElementById('obs-overlay-url-input');
+      const feedback = document.getElementById('obs-copy-feedback');
+      if (!input || !input.value) return;
+
+      try {
+        await navigator.clipboard.writeText(input.value);
+        if (feedback) {
+          feedback.classList.remove('hidden');
+          setTimeout(() => feedback.classList.add('hidden'), 3500);
+        }
+      } catch (err) {
+        input.select();
+        document.execCommand('copy');
+        if (feedback) {
+          feedback.classList.remove('hidden');
+          setTimeout(() => feedback.classList.add('hidden'), 3500);
+        }
+      }
+    }
+
+    function openObsOverlayWindow() {
+      const url = buildObsOverlayUrl(false);
+      window.open(url, '_blank');
+    }
+
+    function triggerObsPreviewTest(type) {
+      const previewIframe = document.getElementById('obs-preview-iframe');
+      if (previewIframe && previewIframe.contentWindow) {
+        try {
+          if (type === 'chat' && typeof previewIframe.contentWindow.testComment === 'function') {
+            previewIframe.contentWindow.testComment();
+          } else if (type === 'gift' && typeof previewIframe.contentWindow.testGift === 'function') {
+            previewIframe.contentWindow.testGift();
+          } else if (type === 'follow' && typeof previewIframe.contentWindow.testFollow === 'function') {
+            previewIframe.contentWindow.testFollow();
+          }
+        } catch (e) {
+          console.warn('Iframe test trigger:', e);
+        }
       }
     }
 
