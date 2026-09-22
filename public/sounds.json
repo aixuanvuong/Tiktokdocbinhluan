@@ -1,0 +1,2082 @@
+{
+  "categories": {
+    "all": "Tất Cả",
+    "meme": "🔥 Meme Hot",
+    "laugh": "😂 Cười & Hài Hước",
+    "pk": "🏆 PK & Chiến Thắng",
+    "cheer": "👏 Cổ Vũ & Vỗ Tay",
+    "action": "🥊 Tát, Đấm & Súng",
+    "love": "💋 Tỏ Tình & Nụ Hôn",
+    "sad": "😭 Buồn & Cay Cú",
+    "suspense": "😱 Hồi Hộp & Drama",
+    "troll": "😜 Troll & Cà Khịa",
+    "music": "🎵 Nhạc Hiệu & Trend"
+  },
+  "sounds": [
+    {
+      "id": "10diemgoc",
+      "title": "10 Điểm (Bản Gốc)",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/10diemgoc.opus",
+      "tags": [
+        "khen",
+        "goc"
+      ]
+    },
+    {
+      "id": "10diem",
+      "title": "10 Điểm Về Chỗ",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/10diem.opus",
+      "tags": [
+        "khen",
+        "hocsinh",
+        "10diem"
+      ]
+    },
+    {
+      "id": "pk10s",
+      "title": "10 Giây PK Cuối Cùng",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/pk10s.opus",
+      "tags": [
+        "pk",
+        "10s",
+        "gap rut"
+      ]
+    },
+    {
+      "id": "30-min",
+      "title": "30 Phút Trôi Qua",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/30-min.opus",
+      "tags": [
+        "thoiluong",
+        "dongho"
+      ]
+    },
+    {
+      "id": "aidanhtaodi",
+      "title": "Ai Đánh Tao Đi",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/aidanhtaodi.opus",
+      "tags": [
+        "ngạc nhiên",
+        "ao"
+      ]
+    },
+    {
+      "id": "ae-den",
+      "title": "Anh Em Da Đen",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/ae-den.opus",
+      "tags": [
+        "nhảy",
+        "dance",
+        "coffin"
+      ]
+    },
+    {
+      "id": "kiss-male",
+      "title": "Anh Zai Tặng Nụ Hôn",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/kiss-male.opus",
+      "tags": [
+        "hon",
+        "nam"
+      ]
+    },
+    {
+      "id": "aothatday",
+      "title": "Ảo Thật Đấy!",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/aothatday.opus",
+      "tags": [
+        "ao",
+        "kinh ngac",
+        "hot"
+      ]
+    },
+    {
+      "id": "scheming",
+      "title": "Âm Mưu Đen Tối Mờ Ám",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/scheming.opus",
+      "tags": [
+        "am muu",
+        "gian"
+      ]
+    },
+    {
+      "id": "vile",
+      "title": "Âm Thanh Kỳ Dị",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/vile.opus",
+      "tags": [
+        "ky di",
+        "la"
+      ]
+    },
+    {
+      "id": "funny",
+      "title": "Âm Thanh Vui Nhộn",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/funny.opus",
+      "tags": [
+        "funny",
+        "vui"
+      ]
+    },
+    {
+      "id": "auxima",
+      "title": "Âu Xi Ma",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/auxima.opus",
+      "tags": [
+        "nhac",
+        "funny"
+      ]
+    },
+    {
+      "id": "banoi",
+      "title": "Bà Nội Cha Mày",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/banoi.opus",
+      "tags": [
+        "chui",
+        "troll",
+        "hai"
+      ]
+    },
+    {
+      "id": "sad-meow-song",
+      "title": "Bài Ca Mèo Khóc Bi Thảm",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/sad-meow-song.opus",
+      "tags": [
+        "meo",
+        "khoc",
+        "buon"
+      ]
+    },
+    {
+      "id": "bannho",
+      "title": "Bạn Nhỏ À",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/bannho.opus",
+      "tags": [
+        "tre con",
+        "nhacnho"
+      ]
+    },
+    {
+      "id": "baylen",
+      "title": "Bay Lên Nào",
+      "cat": "music",
+      "catLabel": "🎵 Nhạc Hiệu & Trend",
+      "file": "/sounds/baylen.opus",
+      "tags": [
+        "nhac",
+        "soidong"
+      ]
+    },
+    {
+      "id": "burstlaugh",
+      "title": "Bật Cười Nắc Nẻ",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/burstlaugh.opus",
+      "tags": [
+        "cuoi",
+        "nac ne"
+      ]
+    },
+    {
+      "id": "bay-oi",
+      "title": "Bây Ơi Bây",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/bay-oi.opus",
+      "tags": [
+        "goi",
+        "hai"
+      ]
+    },
+    {
+      "id": "bietgichua",
+      "title": "Biết Gì Chưa?",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/bietgichua.opus",
+      "tags": [
+        "to mo",
+        "hoi"
+      ]
+    },
+    {
+      "id": "bomay",
+      "title": "Bố Mày Lại Sợ Mày Quá",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/bomay.opus",
+      "tags": [
+        "thach thuc",
+        "troll"
+      ]
+    },
+    {
+      "id": "bomcha",
+      "title": "Bố Mẹ Cha Mày",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/bomcha.opus",
+      "tags": [
+        "hai",
+        "troll"
+      ]
+    },
+    {
+      "id": "bruh",
+      "title": "Bruh Âm Thanh Gốc",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/bruh.opus",
+      "tags": [
+        "bruh",
+        "that vong",
+        "tat"
+      ]
+    },
+    {
+      "id": "laugh-group",
+      "title": "Cả Đám Cười Ồ Lên",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laugh-group.opus",
+      "tags": [
+        "dam dong",
+        "cuoi o"
+      ]
+    },
+    {
+      "id": "cai-gi-do-ba-noi",
+      "title": "Cái Gì Đó Bà Nội?",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/cai-gi-do-ba-noi.opus",
+      "tags": [
+        "hoi",
+        "ngacnhien"
+      ]
+    },
+    {
+      "id": "caiqq",
+      "title": "Cái Gì Vậy Trời (Cái QQ)",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/caiqq.opus",
+      "tags": [
+        "buc minh",
+        "troll"
+      ]
+    },
+    {
+      "id": "camgiaclucay",
+      "title": "Cảm Giác Lúc Ấy Sẽ Ra Sao",
+      "cat": "music",
+      "catLabel": "🎵 Nhạc Hiệu & Trend",
+      "file": "/sounds/camgiaclucay.opus",
+      "tags": [
+        "nhac",
+        "buon"
+      ]
+    },
+    {
+      "id": "camonanh",
+      "title": "Cảm Ơn Anh Zai",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/camonanh.opus",
+      "tags": [
+        "cam on",
+        "tang qua",
+        "gai"
+      ]
+    },
+    {
+      "id": "chayeuem",
+      "title": "Chả Yêu Em Thì Yêu Ai",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/chayeuem.opus",
+      "tags": [
+        "to tinh",
+        "de thuong"
+      ]
+    },
+    {
+      "id": "chetmeroi",
+      "title": "Chết Mẹ Rồi!",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/chetmeroi.opus",
+      "tags": [
+        "hoang loan",
+        "lo lang"
+      ]
+    },
+    {
+      "id": "chi-lay-em",
+      "title": "Chị Lạy Em Luôn",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/chi-lay-em.opus",
+      "tags": [
+        "chiu thua",
+        "bó tay"
+      ]
+    },
+    {
+      "id": "chienthang",
+      "title": "Chiến Thắng Khải Hoàn",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/chienthang.opus",
+      "tags": [
+        "win",
+        "chuc mung",
+        "thanh cong"
+      ]
+    },
+    {
+      "id": "choc-que",
+      "title": "Chọc Quê Lêu Lêu",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/choc-que.opus",
+      "tags": [
+        "troll",
+        "que"
+      ]
+    },
+    {
+      "id": "choitoi",
+      "title": "Chơi Tới Bến Luôn",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/choitoi.opus",
+      "tags": [
+        "chien",
+        "pk",
+        "quyet tam"
+      ]
+    },
+    {
+      "id": "chungtakogiong",
+      "title": "Chúng Ta Không Giống Nhau",
+      "cat": "music",
+      "catLabel": "🎵 Nhạc Hiệu & Trend",
+      "file": "/sounds/chungtakogiong.opus",
+      "tags": [
+        "anh em",
+        "nhac"
+      ]
+    },
+    {
+      "id": "cohai",
+      "title": "Có Hài Hước Không?",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/cohai.opus",
+      "tags": [
+        "nhat",
+        "hoi"
+      ]
+    },
+    {
+      "id": "concainit",
+      "title": "Còn Đúng Cái Nịt",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/concainit.opus",
+      "tags": [
+        "tienbac",
+        "mathet",
+        "hot"
+      ]
+    },
+    {
+      "id": "colen",
+      "title": "Cố Lên Cố Lên!",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/colen.opus",
+      "tags": [
+        "dong vien",
+        "keo diem",
+        "tap tim"
+      ]
+    },
+    {
+      "id": "dam",
+      "title": "Cú Đấm K.O",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/dam.opus",
+      "tags": [
+        "dam",
+        "danh nhau",
+        "tiengdong"
+      ]
+    },
+    {
+      "id": "punch2",
+      "title": "Cú Đấm Mạnh Bạo",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/punch2.opus",
+      "tags": [
+        "punch",
+        "dam"
+      ]
+    },
+    {
+      "id": "punch4",
+      "title": "Cú Đấm Nốc Ao",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/punch4.opus",
+      "tags": [
+        "punch",
+        "dam"
+      ]
+    },
+    {
+      "id": "punch3",
+      "title": "Cú Đấm Trực Diện",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/punch3.opus",
+      "tags": [
+        "punch",
+        "action"
+      ]
+    },
+    {
+      "id": "cuoi-ba-dao",
+      "title": "Cười Bá Đạo Rớt Hàm",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/cuoi-ba-dao.opus",
+      "tags": [
+        "cuoi to",
+        "ba dao"
+      ]
+    },
+    {
+      "id": "laugh-1",
+      "title": "Cười Bật Cười #1",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laugh-1.opus",
+      "tags": [
+        "cuoi"
+      ]
+    },
+    {
+      "id": "laughia",
+      "title": "Cười Cười Nói Nói",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laughia.opus",
+      "tags": [
+        "cuoi"
+      ]
+    },
+    {
+      "id": "laughdiem",
+      "title": "Cười Đểu Khẩy",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laughdiem.opus",
+      "tags": [
+        "deu",
+        "cuoi"
+      ]
+    },
+    {
+      "id": "laughhahe",
+      "title": "Cười Hả Hê Sung Sướng",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laughhahe.opus",
+      "tags": [
+        "ha he"
+      ]
+    },
+    {
+      "id": "laugh-2",
+      "title": "Cười Hắc Hắc #2",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laugh-2.opus",
+      "tags": [
+        "cuoi"
+      ]
+    },
+    {
+      "id": "cuoi-faptv",
+      "title": "Cười Kiểu FAPtv",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/cuoi-faptv.opus",
+      "tags": [
+        "faptv",
+        "hai huoc"
+      ]
+    },
+    {
+      "id": "laugh-la",
+      "title": "Cười Lả Đi",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laugh-la.opus",
+      "tags": [
+        "cuoi",
+        "la"
+      ]
+    },
+    {
+      "id": "cuoinhe",
+      "title": "Cười Mỉm Nhẹ Nhàng",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/cuoinhe.opus",
+      "tags": [
+        "cuoi",
+        "duyen"
+      ]
+    },
+    {
+      "id": "laughgoofy",
+      "title": "Cười Ngố Goofy",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laughgoofy.opus",
+      "tags": [
+        "ngo",
+        "hai"
+      ]
+    },
+    {
+      "id": "cuutui",
+      "title": "Cứu Tui Cứu Tui Trời Ơi",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/cuutui.opus",
+      "tags": [
+        "keu cuu",
+        "hai",
+        "hot"
+      ]
+    },
+    {
+      "id": "da-lam-gi-dau",
+      "title": "Đã Làm Gì Đâu Nhở",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/da-lam-gi-dau.opus",
+      "tags": [
+        "ngay tho",
+        "vo toi"
+      ]
+    },
+    {
+      "id": "sad-violin",
+      "title": "Đàn Kéo Não Ruột Nhất Thế Giới",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/sad-violin.opus",
+      "tags": [
+        "violin",
+        "buon",
+        "hot"
+      ]
+    },
+    {
+      "id": "danhlonko",
+      "title": "Đánh Nhau Đi Nào",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/danhlonko.opus",
+      "tags": [
+        "action",
+        "pk"
+      ]
+    },
+    {
+      "id": "danhlon",
+      "title": "Đánh Nhau Không Bạn",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/danhlon.opus",
+      "tags": [
+        "thach thuc",
+        "action"
+      ]
+    },
+    {
+      "id": "day-toi-biet-ngay",
+      "title": "Đấy! Tôi Biết Ngay Mà",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/day-toi-biet-ngay.opus",
+      "tags": [
+        "doan dung",
+        "tien tri"
+      ]
+    },
+    {
+      "id": "det",
+      "title": "Đệt Mợ Giật Cả Mình",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/det.opus",
+      "tags": [
+        "giat minh",
+        "chui"
+      ]
+    },
+    {
+      "id": "cauca",
+      "title": "Đi Câu Cá Nào",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/cauca.opus",
+      "tags": [
+        "relax",
+        "hai"
+      ]
+    },
+    {
+      "id": "hyohyohyo",
+      "title": "Điệu Cười Hyo Hyo",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/hyohyohyo.opus",
+      "tags": [
+        "cuoi",
+        "la"
+      ]
+    },
+    {
+      "id": "chinese-laugh",
+      "title": "Điệu Cười Trung Quốc",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/chinese-laugh.opus",
+      "tags": [
+        "cuoi",
+        "hai huoc",
+        "troll"
+      ]
+    },
+    {
+      "id": "luadoi",
+      "title": "Đồ Lừa Đảo",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/luadoi.opus",
+      "tags": [
+        "lua dao",
+        "troll"
+      ]
+    },
+    {
+      "id": "laughingkid",
+      "title": "Đứa Bé Cười Khoái Chí",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laughingkid.opus",
+      "tags": [
+        "kid",
+        "cuoi"
+      ]
+    },
+    {
+      "id": "cuoiembe",
+      "title": "Em Bé Cười Đáng Yêu",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/cuoiembe.opus",
+      "tags": [
+        "baby",
+        "cute",
+        "de thuong"
+      ]
+    },
+    {
+      "id": "emthe",
+      "title": "Em Thề Luôn Đấy",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/emthe.opus",
+      "tags": [
+        "the thot",
+        "hai"
+      ]
+    },
+    {
+      "id": "xinh-ngoan",
+      "title": "Em Vừa Xinh Lại Vừa Ngoan",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/xinh-ngoan.opus",
+      "tags": [
+        "xinh",
+        "ngoan",
+        "ngot"
+      ]
+    },
+    {
+      "id": "gaithich",
+      "title": "Gái Thích Là Được",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/gaithich.opus",
+      "tags": [
+        "gai",
+        "thich",
+        "troll"
+      ]
+    },
+    {
+      "id": "gameover",
+      "title": "Game Over Thất Bại",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/gameover.opus",
+      "tags": [
+        "gameover",
+        "thua",
+        "ket thuc"
+      ]
+    },
+    {
+      "id": "daygaydi",
+      "title": "Gậy Ông Đập Lưng Ông",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/daygaydi.opus",
+      "tags": [
+        "tra thu",
+        "nguoc doi"
+      ]
+    },
+    {
+      "id": "ghe-chua",
+      "title": "Ghê Chưa Ghê Chưa!",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/ghe-chua.opus",
+      "tags": [
+        "khoe",
+        "ghe chua",
+        "hot"
+      ]
+    },
+    {
+      "id": "gi-z-troi",
+      "title": "Gì Vậy Trời?",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/gi-z-troi.opus",
+      "tags": [
+        "ngac nhien",
+        "hoi"
+      ]
+    },
+    {
+      "id": "ha-ha-ha",
+      "title": "Ha Ha Ha Đắc Thắng",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/ha-ha-ha.opus",
+      "tags": [
+        "cuoi",
+        "dac thang"
+      ]
+    },
+    {
+      "id": "haha",
+      "title": "Haha Cười To",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/haha.opus",
+      "tags": [
+        "cuoi"
+      ]
+    },
+    {
+      "id": "haha-2",
+      "title": "Haha Giễu Cợt",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/haha-2.opus",
+      "tags": [
+        "cuoi",
+        "troll"
+      ]
+    },
+    {
+      "id": "haha-3",
+      "title": "Haha Hả Hê",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/haha-3.opus",
+      "tags": [
+        "cuoi",
+        "ha he"
+      ]
+    },
+    {
+      "id": "hahahaha",
+      "title": "Hahaha Kéo Dài",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/hahahaha.opus",
+      "tags": [
+        "cuoi",
+        "dien loan"
+      ]
+    },
+    {
+      "id": "hai3zo",
+      "title": "Hai Ba Dzô Nào!",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/hai3zo.opus",
+      "tags": [
+        "nhau",
+        "zo",
+        "vui"
+      ]
+    },
+    {
+      "id": "helpme",
+      "title": "Help Me! Cứu Với!",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/helpme.opus",
+      "tags": [
+        "help",
+        "cuu"
+      ]
+    },
+    {
+      "id": "helosoly",
+      "title": "Hê Lô Xô Ly",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/helosoly.opus",
+      "tags": [
+        "hello",
+        "chao"
+      ]
+    },
+    {
+      "id": "honglenao",
+      "title": "Hóng Lên Nào Các Bác",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/honglenao.opus",
+      "tags": [
+        "hong",
+        "drama"
+      ]
+    },
+    {
+      "id": "hoi-hop-2",
+      "title": "Hồi Hộp Nhịp Tim Đập",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/hoi-hop-2.opus",
+      "tags": [
+        "tim dap",
+        "hoi hop"
+      ]
+    },
+    {
+      "id": "kissshort",
+      "title": "Hôn Chụt Nhanh",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/kissshort.opus",
+      "tags": [
+        "hon",
+        "nhanh"
+      ]
+    },
+    {
+      "id": "hong-biet-nua",
+      "title": "Hổng Biết Nữa Nha",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/hong-biet-nua.opus",
+      "tags": [
+        "khong biet",
+        "ngay tho"
+      ]
+    },
+    {
+      "id": "huwin",
+      "title": "Hú Hú Thắng Rồi!",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/huwin.opus",
+      "tags": [
+        "win",
+        "la het",
+        "vui"
+      ]
+    },
+    {
+      "id": "iloveyou",
+      "title": "I Love You (Giọng Nữ Ngọt)",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/iloveyou.opus",
+      "tags": [
+        "yeu",
+        "to tinh",
+        "ngot"
+      ]
+    },
+    {
+      "id": "kemchongnhuc",
+      "title": "Kem Chống Nhục",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/kemchongnhuc.opus",
+      "tags": [
+        "nhuc",
+        "troll",
+        "hot"
+      ]
+    },
+    {
+      "id": "kheodua",
+      "title": "Khéo Đùa Quá Nha",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/kheodua.opus",
+      "tags": [
+        "dua",
+        "troll"
+      ]
+    },
+    {
+      "id": "khoai-khoai",
+      "title": "Khoái Khoái Chảy Nước Miếng",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/khoai-khoai.opus",
+      "tags": [
+        "khoai",
+        "them",
+        "hot"
+      ]
+    },
+    {
+      "id": "gaycan",
+      "title": "Khoảnh Khắc Gay Cấn",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/gaycan.opus",
+      "tags": [
+        "gay can",
+        "hoi hop"
+      ]
+    },
+    {
+      "id": "khochuhu",
+      "title": "Khóc Hu Hu Hu",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/khochuhu.opus",
+      "tags": [
+        "khoc",
+        "hu hu"
+      ]
+    },
+    {
+      "id": "khocnhe",
+      "title": "Khóc Nức Nở Nhẹ",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/khocnhe.opus",
+      "tags": [
+        "khoc",
+        "buon"
+      ]
+    },
+    {
+      "id": "khongde",
+      "title": "Không Hề Dễ Dàng Đâu",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/khongde.opus",
+      "tags": [
+        "kho",
+        "canh bao"
+      ]
+    },
+    {
+      "id": "lalala",
+      "title": "La La La Vui Vẻ",
+      "cat": "music",
+      "catLabel": "🎵 Nhạc Hiệu & Trend",
+      "file": "/sounds/lalala.opus",
+      "tags": [
+        "hat",
+        "vui"
+      ]
+    },
+    {
+      "id": "lamban",
+      "title": "Làm Bạn Nhé",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/lamban.opus",
+      "tags": [
+        "ket ban",
+        "lam quen"
+      ]
+    },
+    {
+      "id": "legendsnever",
+      "title": "Legends Never Die!",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/legendsnever.opus",
+      "tags": [
+        "huyen thoai",
+        "nhac",
+        "pk"
+      ]
+    },
+    {
+      "id": "leuleu",
+      "title": "Lêu Lêu Đồ Lác",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/leuleu.opus",
+      "tags": [
+        "troll",
+        "leu leu"
+      ]
+    },
+    {
+      "id": "loidoigian",
+      "title": "Lời Nói Dối Trơ Trẽn",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/loidoigian.opus",
+      "tags": [
+        "lua",
+        "doi gian"
+      ]
+    },
+    {
+      "id": "luon-leo",
+      "title": "Lươn Lẹo Vừa Thôi",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/luon-leo.opus",
+      "tags": [
+        "luon leo",
+        "troll",
+        "hot"
+      ]
+    },
+    {
+      "id": "matngu",
+      "title": "Mất Ngủ Luôn Rồi",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/matngu.opus",
+      "tags": [
+        "mat ngu",
+        "chan"
+      ]
+    },
+    {
+      "id": "metmoi",
+      "title": "Mệt Mỏi Thực Sự",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/metmoi.opus",
+      "tags": [
+        "met",
+        "than van"
+      ]
+    },
+    {
+      "id": "nani",
+      "title": "Nani?! Cái Gì Cơ?!",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/nani.opus",
+      "tags": [
+        "nani",
+        "anime",
+        "ngac nhien"
+      ]
+    },
+    {
+      "id": "laugh-male",
+      "title": "Người Đàn Ông Cười Ròn",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laugh-male.opus",
+      "tags": [
+        "nam",
+        "cuoi"
+      ]
+    },
+    {
+      "id": "nhacbuon",
+      "title": "Nhạc Buồn Tâm Trạng",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/nhacbuon.opus",
+      "tags": [
+        "buon",
+        "tam trang"
+      ]
+    },
+    {
+      "id": "drama",
+      "title": "Nhạc Drama Căng Thẳng",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/drama.opus",
+      "tags": [
+        "cang thang",
+        "hittin"
+      ]
+    },
+    {
+      "id": "giangho",
+      "title": "Nhạc Giang Hồ Xã Đoàn",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/giangho.opus",
+      "tags": [
+        "giang ho",
+        "ngau"
+      ]
+    },
+    {
+      "id": "nhac-hai-huoc",
+      "title": "Nhạc Hài Tấu Hài",
+      "cat": "music",
+      "catLabel": "🎵 Nhạc Hiệu & Trend",
+      "file": "/sounds/nhac-hai-huoc.opus",
+      "tags": [
+        "nhac",
+        "tau hai"
+      ]
+    },
+    {
+      "id": "hoi-hop",
+      "title": "Nhạc Hồi Hộp Thót Tim",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/hoi-hop.opus",
+      "tags": [
+        "hoi hop",
+        "cang"
+      ]
+    },
+    {
+      "id": "meme-finales",
+      "title": "Nhạc Kết Thúc Meme",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/meme-finales.opus",
+      "tags": [
+        "ket thuc",
+        "outro"
+      ]
+    },
+    {
+      "id": "ku-cha-na",
+      "title": "Nhạc Trend Gwentchana",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/ku-cha-na.opus",
+      "tags": [
+        "on thoi",
+        "sad"
+      ]
+    },
+    {
+      "id": "nhay-di",
+      "title": "Nhảy Đi Ngại Gì Nữa",
+      "cat": "music",
+      "catLabel": "🎵 Nhạc Hiệu & Trend",
+      "file": "/sounds/nhay-di.opus",
+      "tags": [
+        "nhay",
+        "dance"
+      ]
+    },
+    {
+      "id": "nhieumau",
+      "title": "Nhiều Máu Quá",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/nhieumau.opus",
+      "tags": [
+        "mau",
+        "action"
+      ]
+    },
+    {
+      "id": "nin",
+      "title": "Nín Đi Đừng Khóc",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/nin.opus",
+      "tags": [
+        "nin",
+        "an ui"
+      ]
+    },
+    {
+      "id": "noi-the-thi-chiu",
+      "title": "Nói Thế Thì Chịu Rồi",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/noi-the-thi-chiu.opus",
+      "tags": [
+        "chiu thua",
+        "bo tay"
+      ]
+    },
+    {
+      "id": "kisslady",
+      "title": "Nụ Hôn Quý Cô Ngọt Ngào",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/kisslady.opus",
+      "tags": [
+        "hon",
+        "nu",
+        "ngot"
+      ]
+    },
+    {
+      "id": "kiss",
+      "title": "Nụ Hôn Yêu Thương",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/kiss.opus",
+      "tags": [
+        "kiss",
+        "hon"
+      ]
+    },
+    {
+      "id": "ohnono",
+      "title": "Oh No No No (Meme Cười)",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/ohnono.opus",
+      "tags": [
+        "oh no no",
+        "hot"
+      ]
+    },
+    {
+      "id": "ohno",
+      "title": "Oh No! Thôi Xong!",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/ohno.opus",
+      "tags": [
+        "oh no",
+        "thoi xong"
+      ]
+    },
+    {
+      "id": "omala",
+      "title": "Ô Ma La Ơi",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/omala.opus",
+      "tags": [
+        "troll",
+        "hai"
+      ]
+    },
+    {
+      "id": "oi-ban-oi",
+      "title": "Ối Bạn Ơi Đừng Làm Thế",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/oi-ban-oi.opus",
+      "tags": [
+        "oi ban oi",
+        "khuyen"
+      ]
+    },
+    {
+      "id": "oiconsong",
+      "title": "Ôi Con Sông Quê",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/oiconsong.opus",
+      "tags": [
+        "song que",
+        "que"
+      ]
+    },
+    {
+      "id": "oi-zoi-oi",
+      "title": "Ối Dồi Ôi Luôn!",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/oi-zoi-oi.opus",
+      "tags": [
+        "oi doi oi",
+        "hot"
+      ]
+    },
+    {
+      "id": "oizoioi",
+      "title": "Ối Giời Ơi Cứu Với",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/oizoioi.opus",
+      "tags": [
+        "cuu",
+        "la"
+      ]
+    },
+    {
+      "id": "ongxa",
+      "title": "Ông Xã Ơi Yêu Nhất",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/ongxa.opus",
+      "tags": [
+        "ong xa",
+        "ngot ngao",
+        "gai"
+      ]
+    },
+    {
+      "id": "quakeu",
+      "title": "Quạ Kêu Quạ Quạ Quạ",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/quakeu.opus",
+      "tags": [
+        "qua",
+        "nhat",
+        "que"
+      ]
+    },
+    {
+      "id": "quatbatieu",
+      "title": "Quạt Ba Tiêu Thổi Bay",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/quatbatieu.opus",
+      "tags": [
+        "quat",
+        "gio"
+      ]
+    },
+    {
+      "id": "quelaque",
+      "title": "Quê Là Quê Là Quê",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/quelaque.opus",
+      "tags": [
+        "que",
+        "choc"
+      ]
+    },
+    {
+      "id": "rizz",
+      "title": "Rizz Tán Gái Thần Sầu",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/rizz.opus",
+      "tags": [
+        "rizz",
+        "ngau",
+        "flirt"
+      ]
+    },
+    {
+      "id": "roi-may-xong-roi",
+      "title": "Rồi Mày Xong Mày Rồi Con",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/roi-may-xong-roi.opus",
+      "tags": [
+        "de doa",
+        "hot",
+        "xong"
+      ]
+    },
+    {
+      "id": "saohayrade",
+      "title": "Sao Hay Ra Dẻ Quá À",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/saohayrade.opus",
+      "tags": [
+        "ra de",
+        "troll",
+        "hot"
+      ]
+    },
+    {
+      "id": "sieu-cuon",
+      "title": "Siêu Cuốn Hút Luôn",
+      "cat": "music",
+      "catLabel": "🎵 Nhạc Hiệu & Trend",
+      "file": "/sounds/sieu-cuon.opus",
+      "tags": [
+        "cuon",
+        "nhac"
+      ]
+    },
+    {
+      "id": "shocked",
+      "title": "Sốc Toàn Tập!",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/shocked.opus",
+      "tags": [
+        "soc",
+        "kinh ngac"
+      ]
+    },
+    {
+      "id": "songkolau",
+      "title": "Sống Không Lâu Đâu",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/songkolau.opus",
+      "tags": [
+        "canh bao",
+        "hai"
+      ]
+    },
+    {
+      "id": "so-qua",
+      "title": "Sợ Quá Đi Thôi Mẹ Ơi",
+      "cat": "suspense",
+      "catLabel": "😱 Hồi Hộp & Drama",
+      "file": "/sounds/so-qua.opus",
+      "tags": [
+        "so hai",
+        "la"
+      ]
+    },
+    {
+      "id": "thatim",
+      "title": "Thả Tim Kèm Nhạc Dễ Thương",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/thatim.opus",
+      "tags": [
+        "thatim",
+        "heart",
+        "cute"
+      ]
+    },
+    {
+      "id": "thatvonghia",
+      "title": "Thất Vọng Tràn Trề",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/thatvonghia.opus",
+      "tags": [
+        "that vong",
+        "buon"
+      ]
+    },
+    {
+      "id": "thuapk",
+      "title": "Thua Trận PK Đắng Ngắt",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/thuapk.opus",
+      "tags": [
+        "thua",
+        "pk",
+        "cay"
+      ]
+    },
+    {
+      "id": "illuminati",
+      "title": "Thuyết Âm Mưu Illuminati",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/illuminati.opus",
+      "tags": [
+        "bi an",
+        "tam giac",
+        "meme"
+      ]
+    },
+    {
+      "id": "laughingdog",
+      "title": "Tiếng Chó Cười Meme",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laughingdog.opus",
+      "tags": [
+        "cho",
+        "dog",
+        "cuoi"
+      ]
+    },
+    {
+      "id": "cuoi",
+      "title": "Tiếng Cười Khúc Khích",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/cuoi.opus",
+      "tags": [
+        "cuoi",
+        "nhe nhang"
+      ]
+    },
+    {
+      "id": "fart",
+      "title": "Tiếng Đánh Rắm Hài",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/fart.opus",
+      "tags": [
+        "fart",
+        "hai"
+      ]
+    },
+    {
+      "id": "fart-wet",
+      "title": "Tiếng Đánh Rắm Ướt Át",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/fart-wet.opus",
+      "tags": [
+        "fart",
+        "bua",
+        "troll"
+      ]
+    },
+    {
+      "id": "kiss-2",
+      "title": "Tiếng Hôn Chụt Siêu Kêu",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/kiss-2.opus",
+      "tags": [
+        "hon",
+        "kiss",
+        "chut"
+      ]
+    },
+    {
+      "id": "sexy-sax",
+      "title": "Tiếng Kèn Saxophone Quyến Rũ",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/sexy-sax.opus",
+      "tags": [
+        "sax",
+        "quyen ru",
+        "sexy"
+      ]
+    },
+    {
+      "id": "kentay",
+      "title": "Tiếng Kèn Tây Đám",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/kentay.opus",
+      "tags": [
+        "ken",
+        "tang le",
+        "rip"
+      ]
+    },
+    {
+      "id": "keo-violin",
+      "title": "Tiếng Kéo Đàn Éo Le",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/keo-violin.opus",
+      "tags": [
+        "violin",
+        "eo le"
+      ]
+    },
+    {
+      "id": "monocat",
+      "title": "Tiếng Mèo Kêu Nhí Nhảnh",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/monocat.opus",
+      "tags": [
+        "meo",
+        "cat",
+        "cute"
+      ]
+    },
+    {
+      "id": "snore-mimi",
+      "title": "Tiếng Ngáy Khò Khò Mimimi",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/snore-mimi.opus",
+      "tags": [
+        "ngay",
+        "ngu",
+        "hai"
+      ]
+    },
+    {
+      "id": "tiengsung",
+      "title": "Tiếng Súng Lục Nổ",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/tiengsung.opus",
+      "tags": [
+        "sung",
+        "action"
+      ]
+    },
+    {
+      "id": "takeover",
+      "title": "Tiếng Take Over Hoành Tráng",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/takeover.opus",
+      "tags": [
+        "ngau",
+        "chien"
+      ]
+    },
+    {
+      "id": "tat",
+      "title": "Tiếng Tát Bốp Rát Mặt",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/tat.opus",
+      "tags": [
+        "tat",
+        "bop",
+        "action"
+      ]
+    },
+    {
+      "id": "quack",
+      "title": "Tiếng Vịt Kêu Quạc Quạc",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/quack.opus",
+      "tags": [
+        "duck",
+        "vit",
+        "hai"
+      ]
+    },
+    {
+      "id": "votay",
+      "title": "Tiếng Vỗ Tay Tiêu Chuẩn",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/votay.opus",
+      "tags": [
+        "votay",
+        "chuc mung"
+      ]
+    },
+    {
+      "id": "sungak",
+      "title": "Tiếng Xả Súng AK-47",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/sungak.opus",
+      "tags": [
+        "sung",
+        "ak",
+        "ban"
+      ]
+    },
+    {
+      "id": "dry-fart",
+      "title": "Tiếng Xì Hơi Khô",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/dry-fart.opus",
+      "tags": [
+        "fart",
+        "hai",
+        "bua"
+      ]
+    },
+    {
+      "id": "laugh-child",
+      "title": "Trẻ Con Cười Nắc Nẻ",
+      "cat": "laugh",
+      "catLabel": "😂 Cười & Hài Hước",
+      "file": "/sounds/laugh-child.opus",
+      "tags": [
+        "tre con",
+        "cute"
+      ]
+    },
+    {
+      "id": "tron-lam-sao",
+      "title": "Trốn Làm Sao Được Mày",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/tron-lam-sao.opus",
+      "tags": [
+        "bat",
+        "troll"
+      ]
+    },
+    {
+      "id": "trong-cay",
+      "title": "Trồng Cây Gây Rừng",
+      "cat": "music",
+      "catLabel": "🎵 Nhạc Hiệu & Trend",
+      "file": "/sounds/trong-cay.opus",
+      "tags": [
+        "cay",
+        "relax"
+      ]
+    },
+    {
+      "id": "trong25",
+      "title": "Trống Trận Hồi 25 Giây",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/trong25.opus",
+      "tags": [
+        "trong",
+        "pk",
+        "tran"
+      ]
+    },
+    {
+      "id": "trong30",
+      "title": "Trống Trận Kéo Điểm 30 Giây",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/trong30.opus",
+      "tags": [
+        "trong",
+        "pk",
+        "dap"
+      ]
+    },
+    {
+      "id": "troidatdth",
+      "title": "Trời Đất Dễ Thương Quá",
+      "cat": "love",
+      "catLabel": "💋 Tỏ Tình & Nụ Hôn",
+      "file": "/sounds/troidatdth.opus",
+      "tags": [
+        "cute",
+        "de thuong"
+      ]
+    },
+    {
+      "id": "troihoaconmua",
+      "title": "Trời Đổ Cơn Mưa Buồn",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/troihoaconmua.opus",
+      "tags": [
+        "mua",
+        "buon"
+      ]
+    },
+    {
+      "id": "troioi",
+      "title": "Trời Ơi Là Trời",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/troioi.opus",
+      "tags": [
+        "keu troi",
+        "hai"
+      ]
+    },
+    {
+      "id": "lop1lop5",
+      "title": "Từ Lớp 1 Lên Lớp 5",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/lop1lop5.opus",
+      "tags": [
+        "hoc sinh",
+        "hai"
+      ]
+    },
+    {
+      "id": "ua-j-zo",
+      "title": "Ủa Gì Dợ Bà Nội?",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/ua-j-zo.opus",
+      "tags": [
+        "ua",
+        "hoi",
+        "ngac nhien"
+      ]
+    },
+    {
+      "id": "dau",
+      "title": "Ui Da Đau Quá!",
+      "cat": "action",
+      "catLabel": "🥊 Tát, Đấm & Súng",
+      "file": "/sounds/dau.opus",
+      "tags": [
+        "dau don",
+        "la"
+      ]
+    },
+    {
+      "id": "uitroidat",
+      "title": "Ui Trời Đất Ơi",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/uitroidat.opus",
+      "tags": [
+        "keu troi",
+        "hai"
+      ]
+    },
+    {
+      "id": "viquangu",
+      "title": "Vì Quá Ngu Đấy Mà",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/viquangu.opus",
+      "tags": [
+        "troll",
+        "chui",
+        "hai"
+      ]
+    },
+    {
+      "id": "vinhbiet",
+      "title": "Vĩnh Biệt Cụ!",
+      "cat": "sad",
+      "catLabel": "😭 Buồn & Cay Cú",
+      "file": "/sounds/vinhbiet.opus",
+      "tags": [
+        "vinh biet",
+        "rip",
+        "hot"
+      ]
+    },
+    {
+      "id": "applause-whistle",
+      "title": "Vỗ Tay & Huýt Sáo",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/applause-whistle.opus",
+      "tags": [
+        "votay",
+        "huyt sao"
+      ]
+    },
+    {
+      "id": "applause-cheer",
+      "title": "Vỗ Tay & Reo Hò",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/applause-cheer.opus",
+      "tags": [
+        "chuc mung",
+        "hoan ho",
+        "votay"
+      ]
+    },
+    {
+      "id": "vo-tay-3",
+      "title": "Vỗ Tay Chúc Mừng #3",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/vo-tay-3.opus",
+      "tags": [
+        "votay"
+      ]
+    },
+    {
+      "id": "votay-2",
+      "title": "Vỗ Tay Giòn Giã #2",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/votay-2.opus",
+      "tags": [
+        "votay"
+      ]
+    },
+    {
+      "id": "votaynao",
+      "title": "Vỗ Tay Lên Nào Mọi Người",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/votaynao.opus",
+      "tags": [
+        "keu goi",
+        "votay"
+      ]
+    },
+    {
+      "id": "waitaminute",
+      "title": "Wait A Minute! Chờ Đã!",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/waitaminute.opus",
+      "tags": [
+        "wait",
+        "dung lai"
+      ]
+    },
+    {
+      "id": "what",
+      "title": "What?! Cái Gì Đấy?!",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/what.opus",
+      "tags": [
+        "what",
+        "ngac nhien"
+      ]
+    },
+    {
+      "id": "winpk",
+      "title": "Win PK Chiến Thắng Rực Rỡ #1",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/winpk.opus",
+      "tags": [
+        "win",
+        "pk",
+        "hot"
+      ]
+    },
+    {
+      "id": "winpk-2",
+      "title": "Win PK Khúc Ca Chiến Thắng #2",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/winpk-2.opus",
+      "tags": [
+        "win",
+        "pk",
+        "hang"
+      ]
+    },
+    {
+      "id": "winpk-3",
+      "title": "Win PK Nhạc Quẩy Cực Căng #3",
+      "cat": "pk",
+      "catLabel": "🏆 PK & Chiến Thắng",
+      "file": "/sounds/winpk-3.opus",
+      "tags": [
+        "win",
+        "quay",
+        "soi dong"
+      ]
+    },
+    {
+      "id": "wow",
+      "title": "Wow Ngạc Nhiên Trầm Trồ",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/wow.opus",
+      "tags": [
+        "wow",
+        "khen"
+      ]
+    },
+    {
+      "id": "wowamazing",
+      "title": "Wow! Amazing Good Chóp!",
+      "cat": "meme",
+      "catLabel": "🔥 Meme Hot",
+      "file": "/sounds/wowamazing.opus",
+      "tags": [
+        "amazing",
+        "khen",
+        "hot"
+      ]
+    },
+    {
+      "id": "xuidi",
+      "title": "Xui Thôi Đỏ Quên Đi",
+      "cat": "troll",
+      "catLabel": "😜 Troll & Cà Khịa",
+      "file": "/sounds/xuidi.opus",
+      "tags": [
+        "xui",
+        "hai"
+      ]
+    },
+    {
+      "id": "yeahuda",
+      "title": "Yeah Uda Vui Nhộn",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/yeahuda.opus",
+      "tags": [
+        "yeah",
+        "funny"
+      ]
+    },
+    {
+      "id": "yeah",
+      "title": "Yeahhh! Tuyệt Vời!",
+      "cat": "cheer",
+      "catLabel": "👏 Cổ Vũ & Vỗ Tay",
+      "file": "/sounds/yeah.opus",
+      "tags": [
+        "yeah",
+        "vui"
+      ]
+    }
+  ]
+}

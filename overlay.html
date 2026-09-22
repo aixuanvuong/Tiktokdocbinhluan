@@ -203,14 +203,22 @@
        OBS OVERLAY CONTROLLER
        ========================================================================== */
     const params = new URLSearchParams(window.location.search);
+    
+    // Determine overlay mode: 'chat', 'gift', 'follow', or 'all'
+    let initialMode = params.get('mode') || '';
+    if (!initialMode) {
+      if (params.get('giftsOnly') === '1') initialMode = 'gift';
+      else initialMode = 'all';
+    }
+
     const config = {
       id: (params.get('id') || params.get('user') || '').replace(/^@/, '').trim().toLowerCase(),
+      mode: initialMode.toLowerCase(), // 'chat' | 'gift' | 'follow' | 'all'
       theme: params.get('theme') || 'transparent',
       fontSize: params.get('fontSize') || 'md',
       duration: parseInt(params.get('duration') || '8', 10), // seconds before auto-dismiss (0 = keep)
       maxItems: parseInt(params.get('maxItems') || '5', 10),
       sound: params.get('sound') === '1',
-      giftsOnly: params.get('giftsOnly') === '1',
       layout: params.get('layout') || 'bottom',
       test: params.get('test') === '1'
     };
@@ -230,6 +238,31 @@
     const statusDotEl = document.getElementById('overlay-status-dot');
     const statusTextEl = document.getElementById('overlay-status-text');
     const selectThemeEl = document.getElementById('select-theme');
+
+    // Adapt layout according to mode
+    if (config.mode === 'gift') {
+      if (chatFeedEl) chatFeedEl.style.display = 'none';
+      if (alertsEl) {
+        alertsEl.className = 'fixed inset-0 z-50 flex flex-col items-center justify-center p-4 space-y-4 pointer-events-none';
+      }
+      bodyEl.className = bodyEl.className.replace('justify-end', 'justify-center');
+    } else if (config.mode === 'follow') {
+      if (chatFeedEl) chatFeedEl.style.display = 'none';
+      if (alertsEl) {
+        alertsEl.className = 'fixed top-6 left-4 right-4 z-50 flex flex-col items-center space-y-3 pointer-events-none';
+      }
+    } else if (config.mode === 'chat') {
+      if (alertsEl) alertsEl.style.display = 'none';
+    }
+
+    // Set tip text based on mode
+    const tipTitleEl = tipBoxEl?.querySelector('span');
+    if (tipTitleEl) {
+      if (config.mode === 'chat') tipTitleEl.innerText = 'Khung 1: Bình Luận Livestream (OBS)';
+      else if (config.mode === 'gift') tipTitleEl.innerText = 'Khung 2: Quà Tặng VIP & Hiệu Ứng (OBS)';
+      else if (config.mode === 'follow') tipTitleEl.innerText = 'Khung 3: Follow & Fan Mới (OBS)';
+      else tipTitleEl.innerText = 'Màn Hình OBS & TikTok Live Studio';
+    }
 
     // Apply Initial Theme
     function applyTheme(themeName) {
@@ -280,7 +313,7 @@
        RENDER CHAT BUBBLE
        ========================================================================== */
     function addChatMessage(data) {
-      if (config.giftsOnly) return;
+      if (config.mode === 'gift' || config.mode === 'follow') return;
       hideTip();
 
       const bubbleId = 'chat-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
@@ -354,6 +387,7 @@
        RENDER VIP GIFT BURST ALERT
        ========================================================================== */
     function addGiftAlert(data) {
+      if (config.mode === 'chat' || config.mode === 'follow') return;
       hideTip();
       const alertId = 'gift-' + Date.now();
       const nickname = escapeHtml(data.nickname || 'Đại Gia');
@@ -424,6 +458,7 @@
        RENDER FOLLOW BANNER
        ========================================================================== */
     function addFollowAlert(data) {
+      if (config.mode === 'chat' || config.mode === 'gift') return;
       hideTip();
       const alertId = 'follow-' + Date.now();
       const nickname = escapeHtml(data.nickname || 'Bạn mới');
@@ -563,13 +598,24 @@
 
     // Auto-run test loop if ?test=1
     if (config.test) {
-      testComment();
-      setInterval(() => {
-        const rand = Math.random();
-        if (rand < 0.6) testComment();
-        else if (rand < 0.85) testGift();
-        else testFollow();
-      }, 3500);
+      if (config.mode === 'chat') {
+        testComment();
+        setInterval(() => testComment(), 3000);
+      } else if (config.mode === 'gift') {
+        testGift();
+        setInterval(() => testGift(), 3500);
+      } else if (config.mode === 'follow') {
+        testFollow();
+        setInterval(() => testFollow(), 3200);
+      } else {
+        testComment();
+        setInterval(() => {
+          const rand = Math.random();
+          if (rand < 0.6) testComment();
+          else if (rand < 0.85) testGift();
+          else testFollow();
+        }, 3500);
+      }
     }
 
     // Initialize Lucide icons & Socket

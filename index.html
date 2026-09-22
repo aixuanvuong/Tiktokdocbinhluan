@@ -61,6 +61,23 @@
     input[type=range] {
       accent-color: #00f2fe;
     }
+
+    /* Soundboard Equalizer Soundwave Animations */
+    @keyframes sb-wave {
+      0%, 100% { height: 4px; }
+      50% { height: 16px; }
+    }
+    .sb-wave-1 { animation: sb-wave 0.5s ease-in-out infinite; }
+    .sb-wave-2 { animation: sb-wave 0.7s ease-in-out infinite 0.1s; }
+    .sb-wave-3 { animation: sb-wave 0.6s ease-in-out infinite 0.2s; }
+    .sb-wave-4 { animation: sb-wave 0.8s ease-in-out infinite 0.15s; }
+
+    /* Touch Pad optimization for mobile fingers */
+    .sb-touch-pad {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col antialiased">
@@ -231,6 +248,48 @@
         </div>
       </div>
     </section>
+
+    <!-- MAIN APPLICATION TABS (STREAM & SOUNDBOARD) -->
+    <nav class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-2.5">
+      <div class="flex items-center space-x-2">
+        <!-- Tab 1: Live & Chat -->
+        <button 
+          id="btn-tab-stream" 
+          onclick="switchMainTab('stream')" 
+          class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-2 transition bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 active:scale-95"
+        >
+          <i data-lucide="radio" class="w-4 h-4"></i>
+          <span>🔴 Luồng Live & Đọc Chat</span>
+        </button>
+
+        <!-- Tab 2: Live Soundboard -->
+        <button 
+          id="btn-tab-soundboard" 
+          onclick="switchMainTab('soundboard')" 
+          class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-2 transition bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 active:scale-95"
+        >
+          <i data-lucide="music-2" class="w-4 h-4 text-amber-400"></i>
+          <span>🔊 Soundboard Hiệu Ứng Live</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">183 Âm</span>
+        </button>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center space-x-2 text-xs">
+        <button 
+          onclick="openSoundboardPopup()" 
+          class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-amber-300 border border-slate-800 hover:border-amber-500/30 rounded-xl flex items-center space-x-1.5 transition text-xs font-semibold shadow-sm active:scale-95"
+          title="Mở bảng hiệu ứng âm thanh ra một cửa sổ popup riêng để vừa livestream vừa bấm"
+        >
+          <i data-lucide="external-link" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span class="hidden sm:inline">Mở Soundboard Cửa Sổ Riêng</span>
+          <span class="sm:hidden">Cửa Sổ Riêng</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- VIEW 1: LIVE STREAM & CHAT TAB -->
+    <div id="tab-view-stream" class="space-y-6">
 
     <!-- Main Dashboard Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -479,6 +538,272 @@
       </div>
     </section>
 
+    </div> <!-- /tab-view-stream -->
+
+    <!-- VIEW 2: SOUNDBOARD TAB -->
+    <div id="tab-view-soundboard" class="hidden space-y-4 pb-28 lg:pb-8">
+
+      <!-- Soundboard Top Master Toolbar (Sticky-aware, Glassmorphism) -->
+      <section class="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-3.5 sm:p-4 md:p-5 shadow-xl space-y-3.5">
+        
+        <!-- Header row -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          
+          <!-- Soundboard Intro -->
+          <div class="flex items-center space-x-3 min-w-0">
+            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-amber-500 via-pink-500 to-cyan-400 p-0.5 shadow-lg shadow-amber-500/20 flex-shrink-0">
+              <div class="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                <i data-lucide="music-2" class="w-5 h-5 text-amber-400"></i>
+              </div>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center space-x-2 flex-wrap">
+                <h2 class="text-sm sm:text-base md:text-lg font-black text-slate-100 tracking-tight">Soundboard Live Stream</h2>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">183 Hiệu Ứng</span>
+              </div>
+              <p class="text-[11px] sm:text-xs text-slate-400 truncate">Thiết kế tối ưu cảm ứng điện thoại & phím tắt máy tính</p>
+            </div>
+          </div>
+
+          <!-- Top Quick Actions (View Mode & Popup) -->
+          <div class="flex items-center space-x-2 self-end sm:self-auto flex-shrink-0">
+            
+            <!-- View Mode Switcher (Pad vs List) -->
+            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800" title="Chuyển chế độ hiển thị">
+              <button 
+                id="btn-sb-mode-pad"
+                onclick="setMainSbViewMode('pad')" 
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition bg-amber-500 text-slate-950 shadow-sm"
+              >
+                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                <span class="hidden xs:inline sm:inline">Phím Bấm</span>
+              </button>
+              <button 
+                id="btn-sb-mode-list"
+                onclick="setMainSbViewMode('list')" 
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition text-slate-400 hover:text-slate-200"
+              >
+                <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                <span class="hidden xs:inline sm:inline">Danh Sách</span>
+              </button>
+            </div>
+
+            <!-- Popup Window Button -->
+            <button 
+              onclick="openSoundboardPopup()" 
+              class="px-2.5 sm:px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 flex items-center space-x-1.5 transition active:scale-95"
+              title="Mở soundboard ra cửa sổ riêng (dành cho iPad / màn hình phụ)"
+            >
+              <i data-lucide="external-link" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span class="hidden sm:inline">Cửa Sổ Rời</span>
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- Master Control Bar (Volume, Mode, Stop All) -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-800/80">
+          
+          <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+            
+            <!-- Volume Slider & Quick Mute -->
+            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+              <button onclick="toggleMainSbMute()" id="btn-sb-mute" class="text-cyan-400 hover:text-cyan-300 transition" title="Bật/Tắt tiếng">
+                <i data-lucide="volume-2" id="icon-sb-volume" class="w-4 h-4 flex-shrink-0"></i>
+              </button>
+              <input 
+                type="range" 
+                id="main-sb-volume" 
+                min="0" 
+                max="1" 
+                step="0.05" 
+                value="1" 
+                oninput="setMainSbVolume(this.value)"
+                class="w-20 sm:w-28 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400" 
+                title="Âm lượng Soundboard"
+              />
+              <span id="main-sb-volume-label" class="text-xs font-bold text-cyan-400 w-8 text-right font-mono">100%</span>
+            </div>
+
+            <!-- Multi / Solo Mode Toggle -->
+            <button 
+              id="main-sb-btn-mode"
+              onclick="toggleMainSbSoloMode()" 
+              class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95"
+              title="Chế độ phát: Chồng âm (Multi) hoặc Solo (chỉ phát 1 âm tại 1 thời điểm)"
+            >
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-400"></i>
+              <span id="main-sb-mode-text">Chồng Âm</span>
+            </button>
+
+          </div>
+
+          <!-- Emergency Stop All Button -->
+          <button 
+            onclick="stopMainSbSounds()" 
+            id="main-sb-btn-stop"
+            class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs flex items-center space-x-2 transition shadow-lg shadow-rose-600/20 active:scale-95 flex-shrink-0"
+            title="Dập tắt tất cả âm thanh đang phát ngay lập tức (Phím tắt: Esc hoặc Space)"
+          >
+            <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i>
+            <span>Dừng Tất Cả</span>
+            <kbd class="hidden md:inline-block ml-1 px-1.5 py-0.5 bg-rose-700/80 rounded text-[9px] uppercase font-mono">Esc</kbd>
+          </button>
+
+        </div>
+
+        <!-- Smart TikTok Live Trigger Bar -->
+        <div class="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div class="flex items-center space-x-1.5 text-slate-300 font-semibold">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Tự Động Kích Hoạt Âm Khi Live:</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="flex items-center space-x-2 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 cursor-pointer select-none">
+              <input type="checkbox" id="chk-auto-gift-sound" checked onchange="saveSbSettings()" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-amber-500 w-3.5 h-3.5" />
+              <span class="text-amber-300 font-medium text-[11px]">🎁 Quà &rarr; Reo hò / Win</span>
+            </label>
+
+            <label class="flex items-center space-x-2 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 cursor-pointer select-none">
+              <input type="checkbox" id="chk-auto-follow-sound" checked onchange="saveSbSettings()" class="rounded border-slate-700 bg-slate-900 text-pink-500 focus:ring-pink-500 w-3.5 h-3.5" />
+              <span class="text-pink-300 font-medium text-[11px]">💖 Follow &rarr; Cảm ơn / Thả tim</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Search Bar & Filters -->
+        <div class="pt-1 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
+          <!-- Search Box -->
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+              <i data-lucide="search" class="w-4 h-4"></i>
+            </div>
+            <input 
+              type="text" 
+              id="main-sb-search-input" 
+              oninput="handleMainSbSearch(this.value)"
+              placeholder="Tìm kiếm 183 âm thanh (10 điểm, ảo thật, nịt, cười, vỗ tay, súng, hôn...)" 
+              class="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+            />
+            <button 
+              id="main-sb-search-clear" 
+              onclick="clearMainSbSearch()" 
+              class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200"
+            >
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Sound Counter & Shortcuts Hint -->
+          <div class="flex items-center justify-between md:justify-end space-x-3 text-xs text-slate-400">
+            <span id="main-sb-count-label" class="font-semibold text-slate-300 whitespace-nowrap">Đang hiển thị 183 âm</span>
+            <span class="hidden xl:inline text-[11px] text-slate-500">Bấm phím số <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-[10px] text-amber-300 font-mono">1 - 9</kbd> phát âm ghim • <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-[10px] text-slate-300 font-mono">/</kbd> tìm kiếm</span>
+          </div>
+        </div>
+
+        <!-- Category Horizontal Scroll Carousel -->
+        <div class="relative pt-1">
+          <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs scrollbar-none select-none" id="main-sb-category-pills">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Pinned Favorites Quick-Bar (Hotkeys 1-9) -->
+      <section class="bg-slate-900/90 backdrop-blur border border-amber-500/30 rounded-2xl p-3 sm:p-4 shadow-xl space-y-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+            <h3 class="font-bold text-amber-300 text-xs sm:text-sm">Âm Thanh Ghim Yêu Thích (Phím Tắt 1 - 9)</h3>
+            <span class="text-[10px] text-slate-400 hidden sm:inline">• Chạm trên màn hình hoặc gõ số 1-9 trên bàn phím để kích hoạt</span>
+          </div>
+          <span class="text-[11px] text-amber-400 font-semibold" id="main-sb-fav-count">9 âm ghim</span>
+        </div>
+
+        <div class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-9 gap-2" id="main-sb-favorites-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- Main Soundboard Grid -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between px-1">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="grid" class="w-4 h-4 text-cyan-400"></i>
+            <h3 class="font-bold text-slate-200 text-xs sm:text-sm" id="main-sb-section-title">Kho Toàn Bộ Hiệu Ứng Âm Thanh</h3>
+          </div>
+          <span class="text-xs font-semibold text-slate-400" id="main-sb-active-playing-count">0 đang phát</span>
+        </div>
+
+        <!-- Grid of Sounds -->
+        <div id="main-sb-sounds-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-2.5">
+          <!-- Dynamically populated sound cards -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="main-sb-empty-state" class="hidden py-12 flex flex-col items-center justify-center text-center space-y-2">
+          <div class="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
+            <i data-lucide="search-x" class="w-6 h-6"></i>
+          </div>
+          <p class="text-sm font-semibold text-slate-300">Không tìm thấy âm thanh nào phù hợp</p>
+          <p class="text-xs text-slate-500">Hãy thử tìm bằng từ khóa khác hoặc bấm nút bên dưới để xóa lọc.</p>
+          <button onclick="clearMainSbSearch()" class="mt-2 px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-lg text-xs font-semibold transition active:scale-95">
+            Xóa Bộ Lọc
+          </button>
+        </div>
+      </section>
+
+    </div> <!-- /tab-view-soundboard -->
+
+    <!-- Mobile Floating Stream Deck Bar (Sticky at bottom for phones & tablets) -->
+    <div id="main-sb-mobile-dock" class="hidden lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 p-2.5 px-3.5 shadow-2xl flex items-center justify-between gap-2.5 transition-all">
+      <div class="flex items-center space-x-2.5 min-w-0 flex-1">
+        <div id="mobile-dock-wave" class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 flex-shrink-0 transition">
+          <i data-lucide="music-2" class="w-4 h-4"></i>
+        </div>
+        <div class="min-w-0">
+          <div id="mobile-dock-title" class="text-xs font-bold text-slate-100 truncate">Soundboard Streamer</div>
+          <div id="mobile-dock-subtitle" class="text-[10px] text-slate-400 flex items-center space-x-1.5">
+            <span id="mobile-dock-status" class="text-emerald-400 font-semibold">183 âm sẵn sàng</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-1.5 flex-shrink-0">
+        <!-- Quick Mode Button -->
+        <button 
+          onclick="toggleMainSbSoloMode()" 
+          id="mobile-dock-btn-mode"
+          class="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-purple-300 text-[11px] font-bold active:scale-95 transition"
+          title="Chế độ phát"
+        >
+          <span id="mobile-dock-mode-text">Chồng</span>
+        </button>
+
+        <!-- Search Jump Button -->
+        <button 
+          onclick="focusMainSbSearch()" 
+          class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 active:scale-95 transition"
+          title="Tìm âm nhanh"
+        >
+          <i data-lucide="search" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Emergency Stop Button -->
+        <button 
+          onclick="stopMainSbSounds()" 
+          id="mobile-dock-btn-stop"
+          class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black text-xs flex items-center space-x-1.5 shadow-lg shadow-rose-600/30 transition-all"
+        >
+          <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i>
+          <span id="mobile-dock-stop-text">Dừng</span>
+        </button>
+      </div>
+    </div>
+
   </main>
 
   <!-- Footer -->
@@ -688,34 +1013,113 @@
 
   <!-- 4. OBS & TIKTOK LIVE STUDIO OVERLAY GENERATOR MODAL -->
   <div id="modal-obs-overlay" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 md:p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-5 md:p-6 space-y-5 shadow-2xl relative max-h-[92vh] flex flex-col">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-5 md:p-6 space-y-4 shadow-2xl relative max-h-[92vh] flex flex-col">
       <button onclick="closeObsOverlayModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <!-- Header -->
-      <div class="flex items-center space-x-3 border-b border-slate-800 pb-3.5 flex-shrink-0">
-        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+      <div class="flex items-center space-x-3 border-b border-slate-800 pb-3 flex-shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 flex-shrink-0">
           <i data-lucide="layers" class="w-5 h-5"></i>
         </div>
         <div>
           <h3 class="text-base font-bold text-slate-100 flex items-center space-x-2">
-            <span>Màn Hình OBS Studio &amp; TikTok Live Studio</span>
+            <span>Màn Hình OBS &amp; TikTok Live Studio (3 Khung Tách Biệt)</span>
             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-gradient-to-r from-pink-500 to-purple-500 text-white uppercase">Trong Suốt</span>
           </h3>
-          <p class="text-xs text-slate-400">Tạo đường link Browser Source hiển thị bình luận, thông báo quà tặng VIP lấp lánh và lượt follow</p>
+          <p class="text-xs text-slate-400">Tách riêng 3 khung hình độc lập: Bình luận, Quà tặng VIP và Follow để streamer dễ dàng sắp xếp vị trí trên OBS</p>
         </div>
       </div>
 
       <!-- Modal Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
 
-        <!-- URL Generator Section -->
-        <div class="bg-slate-950 p-4 rounded-xl border border-purple-500/30 space-y-3">
+        <!-- 3-FRAME MODE SELECTOR TABS -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-slate-300 font-semibold">
+            <span class="flex items-center space-x-1.5 text-xs text-purple-300">
+              <i data-lucide="layout-grid" class="w-4 h-4 text-purple-400"></i>
+              <span>Chọn Khung Hình Muốn Lấy Link:</span>
+            </span>
+            <span id="obs-mode-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              Kích thước chuẩn: 450 x 650 px (Góc dưới)
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <!-- Tab 1: Chat -->
+            <button 
+              id="tab-obs-chat" 
+              onclick="switchObsMode('chat')" 
+              class="p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-cyan-950/60 border-cyan-500/80 text-cyan-200 shadow-md shadow-cyan-500/10"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-bold flex items-center space-x-1 text-xs">
+                  <i data-lucide="message-square" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  <span>1. Khung Chat</span>
+                </span>
+                <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              </div>
+              <p class="text-[10px] text-slate-400 truncate">Bình luận trượt mượt mà</p>
+            </button>
+
+            <!-- Tab 2: Gift -->
+            <button 
+              id="tab-obs-gift" 
+              onclick="switchObsMode('gift')" 
+              class="p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-bold flex items-center space-x-1 text-xs">
+                  <i data-lucide="gift" class="w-3.5 h-3.5 text-amber-400"></i>
+                  <span>2. Quà Tặng VIP</span>
+                </span>
+                <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+              </div>
+              <p class="text-[10px] text-slate-400 truncate">Pháo hoa &amp; Hào quang</p>
+            </button>
+
+            <!-- Tab 3: Follow -->
+            <button 
+              id="tab-obs-follow" 
+              onclick="switchObsMode('follow')" 
+              class="p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-bold flex items-center space-x-1 text-xs">
+                  <i data-lucide="user-plus" class="w-3.5 h-3.5 text-pink-400"></i>
+                  <span>3. Khung Follow</span>
+                </span>
+                <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+              </div>
+              <p class="text-[10px] text-slate-400 truncate">Theo dõi &amp; Chia sẻ</p>
+            </button>
+
+            <!-- Tab 4: All-in-One -->
+            <button 
+              id="tab-obs-all" 
+              onclick="switchObsMode('all')" 
+              class="p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-bold flex items-center space-x-1 text-xs">
+                  <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-400"></i>
+                  <span>4. Gộp 3 Trong 1</span>
+                </span>
+                <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+              </div>
+              <p class="text-[10px] text-slate-400 truncate">Tất cả vào 1 khung</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- URL Generator Section for Selected Mode -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-purple-500/30 space-y-2.5">
           <div class="flex items-center justify-between">
             <span class="font-bold text-purple-300 flex items-center space-x-1.5 text-xs">
               <i data-lucide="link" class="w-3.5 h-3.5"></i>
-              <span>Link Browser Source Dành Cho OBS / Live Studio:</span>
+              <span id="obs-selected-frame-title">Link Browser Source Dành Cho Khung Bình Luận:</span>
             </span>
             <span id="obs-copy-feedback" class="hidden text-emerald-400 font-bold text-[11px] animate-pulse">
               Đã sao chép vào bộ nhớ tạm!
@@ -734,7 +1138,7 @@
               class="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-md shadow-purple-500/20 active:scale-95 flex-shrink-0"
             >
               <i data-lucide="copy" class="w-4 h-4"></i>
-              <span>Sao Chép Link</span>
+              <span>Sao Chép Link Này</span>
             </button>
             <button 
               onclick="openObsOverlayWindow()" 
@@ -744,6 +1148,78 @@
               <i data-lucide="external-link" class="w-4 h-4 text-cyan-400"></i>
               <span>Mở Thử</span>
             </button>
+          </div>
+        </div>
+
+        <!-- QUICK 3-LINKS STRIP: COPY ALL 3 WITH 1 CLICK EACH -->
+        <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-200 flex items-center space-x-1.5 text-xs">
+              <i data-lucide="list" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Bộ 3 Link Tách Biệt Để Dán Nhanh Vào 3 Nguồn OBS:</span>
+            </span>
+            <span id="quick-copy-toast" class="hidden text-emerald-400 font-bold text-[10px] animate-bounce">
+              Đã sao chép!
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <!-- Row 1: Chat -->
+            <div class="p-2 bg-slate-900/90 rounded-lg border border-slate-800 flex items-center justify-between space-x-2">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center space-x-1.5">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  <span class="font-bold text-cyan-300 text-xs truncate">1. Khung Bình Luận</span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Kích thước: 450x650 (Góc dưới)</span>
+              </div>
+              <button 
+                onclick="copyQuickObsLink('chat')" 
+                class="px-2.5 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 rounded-lg text-[11px] font-semibold flex items-center space-x-1 flex-shrink-0 transition active:scale-95"
+                title="Sao chép link khung chat"
+              >
+                <i data-lucide="copy" class="w-3 h-3"></i>
+                <span>Copy Link</span>
+              </button>
+            </div>
+
+            <!-- Row 2: Gift -->
+            <div class="p-2 bg-slate-900/90 rounded-lg border border-slate-800 flex items-center justify-between space-x-2">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center space-x-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                  <span class="font-bold text-amber-300 text-xs truncate">2. Quà Tặng VIP</span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Kích thước: 550x350 (Chính giữa)</span>
+              </div>
+              <button 
+                onclick="copyQuickObsLink('gift')" 
+                class="px-2.5 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-500/40 text-amber-200 rounded-lg text-[11px] font-semibold flex items-center space-x-1 flex-shrink-0 transition active:scale-95"
+                title="Sao chép link khung quà tặng"
+              >
+                <i data-lucide="copy" class="w-3 h-3"></i>
+                <span>Copy Link</span>
+              </button>
+            </div>
+
+            <!-- Row 3: Follow -->
+            <div class="p-2 bg-slate-900/90 rounded-lg border border-slate-800 flex items-center justify-between space-x-2">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center space-x-1.5">
+                  <span class="w-2 h-2 rounded-full bg-pink-400"></span>
+                  <span class="font-bold text-pink-300 text-xs truncate">3. Khung Follow</span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Kích thước: 450x180 (Góc trên)</span>
+              </div>
+              <button 
+                onclick="copyQuickObsLink('follow')" 
+                class="px-2.5 py-1.5 bg-pink-950 hover:bg-pink-900 border border-pink-500/40 text-pink-200 rounded-lg text-[11px] font-semibold flex items-center space-x-1 flex-shrink-0 transition active:scale-95"
+                title="Sao chép link khung follow"
+              >
+                <i data-lucide="copy" class="w-3 h-3"></i>
+                <span>Copy Link</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -786,23 +1262,14 @@
 
           <!-- Sound on OBS -->
           <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
-            <label class="block font-semibold text-slate-300">Âm Thanh Đọc Trên OBS:</label>
+            <label class="block font-semibold text-slate-300">Âm Thanh Quà Tặng Trên OBS:</label>
             <select id="obs-opt-sound" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
               <option value="0">Tắt âm (Khuyên dùng)</option>
               <option value="1">Bật âm thanh trực tiếp</option>
             </select>
           </div>
 
-          <!-- Filter Mode -->
-          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
-            <label class="block font-semibold text-slate-300">Nội Dung Hiển Thị:</label>
-            <select id="obs-opt-filter" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
-              <option value="0">Tất cả (Chat, Quà, Follow)</option>
-              <option value="1">Chỉ Quà Tặng &amp; Follow VIP</option>
-            </select>
-          </div>
-
-          <!-- Max bubbles -->
+          <!-- Max bubbles for chat -->
           <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
             <label class="block font-semibold text-slate-300">Số Bình Luận Tối Đa:</label>
             <select id="obs-opt-max" onchange="updateObsOverlayUrl()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 outline-none">
@@ -812,6 +1279,17 @@
             </select>
           </div>
 
+          <!-- Streamer Tip -->
+          <div class="bg-slate-950 p-3 rounded-xl border border-purple-500/20 flex flex-col justify-center space-y-1">
+            <span class="font-bold text-purple-300 flex items-center space-x-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Lợi ích tách 3 khung:</span>
+            </span>
+            <span class="text-[10px] text-slate-400 leading-tight">
+              Bạn có thể phóng to khung quà tặng VIP đặt ở giữa, đặt khung chat nhỏ ở góc mà không sợ bị đè lên nhau.
+            </span>
+          </div>
+
         </div>
 
         <!-- Interactive Live Simulation Preview -->
@@ -819,7 +1297,7 @@
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="font-bold text-slate-300 flex items-center space-x-1.5">
               <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-400"></i>
-              <span>Mô Phỏng Trực Tiếp Màn Hình OBS:</span>
+              <span id="obs-preview-title">Mô Phỏng Trực Tiếp Khung Đang Chọn:</span>
             </span>
 
             <div class="flex items-center space-x-1.5">
@@ -840,7 +1318,7 @@
 
           <!-- Preview Frame with Transparent Checkerboard Pattern -->
           <div class="w-full h-64 rounded-xl overflow-hidden border border-slate-800 relative bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] bg-slate-950">
-            <iframe id="obs-preview-iframe" src="/overlay.html?test=1" class="w-full h-full border-0"></iframe>
+            <iframe id="obs-preview-iframe" src="/overlay.html?mode=chat&test=1" class="w-full h-full border-0"></iframe>
           </div>
         </div>
 
@@ -848,20 +1326,20 @@
         <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800/80 space-y-2">
           <span class="font-bold text-slate-300 text-xs flex items-center space-x-1.5">
             <i data-lucide="help-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
-            <span>Cách Thêm Vào OBS Studio Hoặc TikTok Live Studio Trong 1 Phút:</span>
+            <span>Cách Thêm 3 Khung Vào OBS Studio Hoặc TikTok Live Studio Trong 1 Phút:</span>
           </span>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-slate-400 pt-1">
             <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
-              <strong class="text-cyan-400 block mb-1">Bước 1: Copy Link</strong>
-              Bấm nút "Sao Chép Link" ở ô trên để lấy đường dẫn Overlay đã cấu hình cho kênh của bạn.
+              <strong class="text-cyan-400 block mb-1">Bước 1: Copy Link Khung</strong>
+              Bấm nút "Copy Link" của khung bạn muốn thêm (Khung Chat, Khung Quà, hoặc Khung Follow).
             </div>
             <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
               <strong class="text-purple-400 block mb-1">Bước 2: Thêm Browser Source</strong>
-              Trong OBS / TikTok Live Studio, tại ô <strong>Nguồn (Sources)</strong> bấm dấu <strong>+</strong> &rarr; Chọn <strong>Browser</strong> (Trình duyệt).
+              Trong OBS, ô <strong>Nguồn (Sources)</strong> bấm <strong>+</strong> &rarr; Chọn <strong>Browser</strong> &rarr; Đặt tên (VD: <em>TikTok Chat</em> hoặc <em>TikTok Qua</em>).
             </div>
             <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
-              <strong class="text-emerald-400 block mb-1">Bước 3: Dán Link &amp; Kích Thước</strong>
-              Dán link vừa copy vào ô URL. Đặt Chiều rộng: <strong>450</strong>, Chiều cao: <strong>700</strong> &rarr; Bấm <strong>OK</strong>. Xong ngay!
+              <strong class="text-emerald-400 block mb-1">Bước 3: Dán Link &amp; Sắp Xếp</strong>
+              Dán URL, chỉnh kích thước đề xuất (Chat: 450x650, Quà: 550x350) &rarr; Kéo thả vị trí trên màn hình live. Xong ngay!
             </div>
           </div>
         </div>
@@ -870,7 +1348,7 @@
 
       <!-- Modal Footer -->
       <div class="pt-2 border-t border-slate-800 flex items-center justify-between flex-shrink-0">
-        <span class="text-[11px] text-slate-500 italic">Mẹo: Bạn có thể mở đồng thời trên nhiều cảnh (Scenes) khác nhau mà không lo tốn CPU.</span>
+        <span class="text-[11px] text-slate-500 italic">Mẹo: Cả 3 khung hình chạy độc lập nhưng đều kết nối đồng bộ tới luồng live cùng lúc.</span>
         <button onclick="closeObsOverlayModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">
           Đóng
         </button>
@@ -1940,6 +2418,19 @@
 
           addEventToLog('follow', username, 'Đã theo dõi kênh', data.profilePictureUrl);
           ttsQueue.enqueue('follow', username, '');
+          checkAutoPlayFollowSound();
+        });
+
+        // Gift Event
+        state.socket.on('gift', (data) => {
+          const username = data.nickname || data.uniqueId || 'Người dùng';
+          const giftName = data.giftName || 'Quà';
+          const repeatCount = data.repeatCount || 1;
+          const giftDesc = repeatCount > 1 ? `Đã tặng ${giftName} x${repeatCount}` : `Đã tặng ${giftName}`;
+
+          addEventToLog('gift', username, giftDesc, data.profilePictureUrl);
+          ttsQueue.enqueue('chat', username, giftDesc);
+          checkAutoPlayGiftSound();
         });
 
         state.socket.on('streamEnd', () => {
@@ -2027,14 +2518,22 @@
       addEventToLog('system', 'Hệ thống', 'Đã bật chế độ Giả lập luồng sự kiện TikTok Live.');
 
       state.simulationInterval = setInterval(() => {
-        const isFollow = Math.random() < 0.25;
+        const rand = Math.random();
         const randomUser = sampleUsers[Math.floor(Math.random() * sampleUsers.length)];
 
-        if (isFollow) {
+        if (rand < 0.20) {
           state.stats.follows++;
           updateStatsUI();
           addEventToLog('follow', randomUser, 'Đã theo dõi kênh');
           ttsQueue.enqueue('follow', randomUser, '');
+          checkAutoPlayFollowSound();
+        } else if (rand < 0.35) {
+          const gifts = ['Hoa Hồng', 'Tim TikTok', 'Mũ Vương Miện', 'Pháo Hoa', 'Bánh Kem'];
+          const gift = gifts[Math.floor(Math.random() * gifts.length)];
+          const count = Math.floor(Math.random() * 5) + 1;
+          const giftDesc = count > 1 ? `Đã tặng ${gift} x${count}` : `Đã tặng ${gift}`;
+          addEventToLog('gift', randomUser, giftDesc);
+          checkAutoPlayGiftSound();
         } else {
           const randomComment = sampleComments[Math.floor(Math.random() * sampleComments.length)];
           state.stats.chats++;
@@ -3001,13 +3500,75 @@
     }
 
     /* ==========================================================================
-       OBS & TIKTOK LIVE STUDIO OVERLAY FUNCTIONS
+       OBS & TIKTOK LIVE STUDIO OVERLAY FUNCTIONS (3 SEPARATE FRAMES)
        ========================================================================== */
+    let currentObsMode = 'chat'; // 'chat' | 'gift' | 'follow' | 'all'
+
+    function switchObsMode(mode) {
+      currentObsMode = mode;
+
+      const tabs = {
+        chat: document.getElementById('tab-obs-chat'),
+        gift: document.getElementById('tab-obs-gift'),
+        follow: document.getElementById('tab-obs-follow'),
+        all: document.getElementById('tab-obs-all')
+      };
+
+      // Reset all tabs
+      Object.entries(tabs).forEach(([key, btn]) => {
+        if (!btn) return;
+        const dot = btn.querySelector('span.rounded-full');
+        if (key === mode) {
+          if (key === 'chat') {
+            btn.className = 'p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-cyan-950/60 border-cyan-500/80 text-cyan-200 shadow-md shadow-cyan-500/10';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-cyan-400';
+          } else if (key === 'gift') {
+            btn.className = 'p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-amber-950/60 border-amber-500/80 text-amber-200 shadow-md shadow-amber-500/10';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+          } else if (key === 'follow') {
+            btn.className = 'p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-pink-950/60 border-pink-500/80 text-pink-200 shadow-md shadow-pink-500/10';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-pink-400';
+          } else {
+            btn.className = 'p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-purple-950/60 border-purple-500/80 text-purple-200 shadow-md shadow-purple-500/10';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-purple-400';
+          }
+        } else {
+          btn.className = 'p-2.5 rounded-xl border text-left transition flex flex-col space-y-1 bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700';
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-600';
+        }
+      });
+
+      // Update Frame Info Badges
+      const badge = document.getElementById('obs-mode-badge');
+      const title = document.getElementById('obs-selected-frame-title');
+      const previewTitle = document.getElementById('obs-preview-title');
+
+      if (mode === 'chat') {
+        if (badge) badge.innerHTML = '<span class="text-cyan-400">Khung 1 (Chat):</span> 450 x 650 px • Đặt góc dưới';
+        if (title) title.innerText = 'Link Browser Source Cho Khung Bình Luận:';
+        if (previewTitle) previewTitle.innerText = 'Mô Phỏng Trực Tiếp: Khung 1 (Bình Luận)';
+      } else if (mode === 'gift') {
+        if (badge) badge.innerHTML = '<span class="text-amber-400">Khung 2 (Quà VIP):</span> 550 x 350 px • Đặt chính giữa màn hình';
+        if (title) title.innerText = 'Link Browser Source Cho Khung Quà Tặng VIP:';
+        if (previewTitle) previewTitle.innerText = 'Mô Phỏng Trực Tiếp: Khung 2 (Quà Tặng VIP)';
+      } else if (mode === 'follow') {
+        if (badge) badge.innerHTML = '<span class="text-pink-400">Khung 3 (Follow):</span> 450 x 180 px • Đặt góc trên cùng';
+        if (title) title.innerText = 'Link Browser Source Cho Khung Follow & Fan Mới:';
+        if (previewTitle) previewTitle.innerText = 'Mô Phỏng Trực Tiếp: Khung 3 (Follow & Chia Sẻ)';
+      } else {
+        if (badge) badge.innerHTML = '<span class="text-purple-400">Gộp 3 Trong 1:</span> 450 x 700 px • Đa năng';
+        if (title) title.innerText = 'Link Browser Source Gộp Cả 3 Trong 1:';
+        if (previewTitle) previewTitle.innerText = 'Mô Phỏng Trực Tiếp: Tất Cả Trong 1';
+      }
+
+      updateObsOverlayUrl();
+    }
+
     function openObsOverlayModal() {
       const modal = document.getElementById('modal-obs-overlay');
       if (modal) {
         modal.classList.remove('hidden');
-        updateObsOverlayUrl();
+        switchObsMode(currentObsMode || 'chat');
       }
     }
 
@@ -3026,23 +3587,25 @@
       const duration = document.getElementById('obs-opt-duration')?.value || '8';
       const font = document.getElementById('obs-opt-font')?.value || 'md';
       const sound = document.getElementById('obs-opt-sound')?.value || '0';
-      const filter = document.getElementById('obs-opt-filter')?.value || '0';
       const max = document.getElementById('obs-opt-max')?.value || '5';
 
-      return { cleanId, theme, duration, font, sound, filter, max };
+      return { cleanId, theme, duration, font, sound, max };
     }
 
-    function buildObsOverlayUrl(includeTest = false) {
+    function buildObsOverlayUrl(modeOverride = null, includeTest = false) {
       const s = getSelectedObsSettings();
       const origin = window.location.origin;
       const params = new URLSearchParams();
+      const targetMode = modeOverride || currentObsMode || 'chat';
 
+      if (targetMode && targetMode !== 'all') {
+        params.set('mode', targetMode);
+      }
       if (s.cleanId) params.set('id', s.cleanId);
       if (s.theme !== 'transparent') params.set('theme', s.theme);
       if (s.duration !== '8') params.set('duration', s.duration);
       if (s.font !== 'md') params.set('fontSize', s.font);
       if (s.sound === '1') params.set('sound', '1');
-      if (s.filter === '1') params.set('giftsOnly', '1');
       if (s.max !== '5') params.set('maxItems', s.max);
       if (includeTest) params.set('test', '1');
 
@@ -3053,11 +3616,11 @@
     function updateObsOverlayUrl() {
       const input = document.getElementById('obs-overlay-url-input');
       const previewIframe = document.getElementById('obs-preview-iframe');
-      const url = buildObsOverlayUrl(false);
+      const url = buildObsOverlayUrl(currentObsMode, false);
 
       if (input) input.value = url;
       if (previewIframe) {
-        const previewUrl = buildObsOverlayUrl(true);
+        const previewUrl = buildObsOverlayUrl(currentObsMode, true);
         previewIframe.src = previewUrl;
       }
     }
@@ -3083,8 +3646,39 @@
       }
     }
 
+    async function copyQuickObsLink(mode) {
+      const url = buildObsOverlayUrl(mode, false);
+      const toast = document.getElementById('quick-copy-toast');
+      const modeNames = {
+        chat: 'Khung Bình Luận',
+        gift: 'Khung Quà Tặng VIP',
+        follow: 'Khung Follow'
+      };
+
+      try {
+        await navigator.clipboard.writeText(url);
+        if (toast) {
+          toast.innerText = `Đã sao chép link ${modeNames[mode] || ''}!`;
+          toast.classList.remove('hidden');
+          setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+      } catch (e) {
+        const temp = document.createElement('input');
+        temp.value = url;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        if (toast) {
+          toast.innerText = `Đã sao chép link ${modeNames[mode] || ''}!`;
+          toast.classList.remove('hidden');
+          setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+      }
+    }
+
     function openObsOverlayWindow() {
-      const url = buildObsOverlayUrl(false);
+      const url = buildObsOverlayUrl(currentObsMode, false);
       window.open(url, '_blank');
     }
 
@@ -3106,6 +3700,670 @@
     }
 
     /* ==========================================================================
+       12. SOUNDBOARD ENGINE & EVENT INTEGRATION (RESPONSIVE TOUCH & DESKTOP)
+       ========================================================================== */
+    let mainSbSounds = [];
+    let mainSbCategories = {};
+    let mainSbCurrentCat = 'all';
+    let mainSbSearchQuery = '';
+    let mainSbMasterVolume = 1.0;
+    let mainSbPreviousVolume = 1.0;
+    let mainSbIsMuted = false;
+    let mainSbSoloMode = false;
+    let mainSbViewMode = 'pad'; // 'pad' or 'list'
+    const mainSbActiveAudios = new Map();
+
+    try {
+      const savedMode = localStorage.getItem('stream_sb_view_mode');
+      if (savedMode === 'pad' || savedMode === 'list') {
+        mainSbViewMode = savedMode;
+      }
+    } catch {}
+
+    const defaultMainSbFavs = [
+      '10diem', 'aothatday', 'applause-cheer', 'winpk', 
+      'concainit', 'cuoi-ba-dao', 'tat', 'camonanh', 'sad-violin'
+    ];
+    let mainSbFavorites = new Set();
+
+    try {
+      const saved = localStorage.getItem('stream_fav_sounds_v1');
+      if (saved) {
+        mainSbFavorites = new Set(JSON.parse(saved));
+      } else {
+        mainSbFavorites = new Set(defaultMainSbFavs);
+      }
+    } catch {
+      mainSbFavorites = new Set(defaultMainSbFavs);
+    }
+
+    function saveMainSbFavorites() {
+      try {
+        localStorage.setItem('stream_fav_sounds_v1', JSON.stringify(Array.from(mainSbFavorites)));
+      } catch {}
+    }
+
+    const sbCategoryIcons = {
+      all: '🌐',
+      favorites: '⭐',
+      meme: '🔥',
+      laugh: '😂',
+      pk: '🏆',
+      cheer: '👏',
+      hit: '🥊',
+      love: '💋',
+      sad: '😭',
+      drama: '😱',
+      troll: '😜',
+      soundtrack: '🎵'
+    };
+
+    function setMainSbViewMode(mode) {
+      mainSbViewMode = mode;
+      try { localStorage.setItem('stream_sb_view_mode', mode); } catch {}
+
+      const btnPad = document.getElementById('btn-sb-mode-pad');
+      const btnList = document.getElementById('btn-sb-mode-list');
+      const gridContainer = document.getElementById('main-sb-sounds-grid');
+
+      if (mode === 'pad') {
+        if (btnPad) btnPad.className = "px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition bg-amber-500 text-slate-950 shadow-sm";
+        if (btnList) btnList.className = "px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition text-slate-400 hover:text-slate-200";
+        if (gridContainer) {
+          gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-2.5";
+        }
+      } else {
+        if (btnList) btnList.className = "px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition bg-amber-500 text-slate-950 shadow-sm";
+        if (btnPad) btnPad.className = "px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition text-slate-400 hover:text-slate-200";
+        if (gridContainer) {
+          gridContainer.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2";
+        }
+      }
+
+      renderMainSbGrid();
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function switchMainTab(tab) {
+      const btnStream = document.getElementById('btn-tab-stream');
+      const btnSoundboard = document.getElementById('btn-tab-soundboard');
+      const viewStream = document.getElementById('tab-view-stream');
+      const viewSoundboard = document.getElementById('tab-view-soundboard');
+      const mobileDock = document.getElementById('main-sb-mobile-dock');
+
+      if (tab === 'soundboard') {
+        btnSoundboard.className = "px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-2 transition bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 active:scale-95";
+        btnStream.className = "px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-2 transition bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 active:scale-95";
+        viewStream.classList.add('hidden');
+        viewSoundboard.classList.remove('hidden');
+        if (mobileDock) mobileDock.classList.remove('hidden');
+        
+        if (mainSbSounds.length === 0) {
+          loadMainSoundboard();
+        } else {
+          renderMainSbFavorites();
+          setMainSbViewMode(mainSbViewMode);
+        }
+      } else {
+        btnStream.className = "px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-2 transition bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 active:scale-95";
+        btnSoundboard.className = "px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-2 transition bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 active:scale-95";
+        viewStream.classList.remove('hidden');
+        viewSoundboard.classList.add('hidden');
+        if (mobileDock) mobileDock.classList.add('hidden');
+      }
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function openSoundboardPopup() {
+      const popup = window.open('/soundboard', 'StreamerSoundboard', 'width=1150,height=750,menubar=no,toolbar=no,location=no,status=no');
+      if (!popup) {
+        switchMainTab('soundboard');
+      }
+    }
+
+    function focusMainSbSearch() {
+      const input = document.getElementById('main-sb-search-input');
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    async function loadMainSoundboard() {
+      try {
+        const res = await fetch('/api/sounds');
+        const data = await res.json();
+        mainSbSounds = data.sounds || [];
+        mainSbCategories = data.categories || {};
+        renderMainSbCategories();
+        renderMainSbFavorites();
+        setMainSbViewMode(mainSbViewMode);
+      } catch (err) {
+        console.error('Failed to load main soundboard:', err);
+      }
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function renderMainSbCategories() {
+      const container = document.getElementById('main-sb-category-pills');
+      if (!container) return;
+
+      const cats = [
+        { id: 'all', label: 'Tất Cả', icon: '🌐', count: mainSbSounds.length },
+        { id: 'favorites', label: 'Yêu Thích', icon: '⭐', count: mainSbFavorites.size },
+        ...Object.entries(mainSbCategories)
+          .filter(([id]) => id !== 'all')
+          .map(([id, label]) => {
+            const count = mainSbSounds.filter(s => s.cat === id).length;
+            const icon = sbCategoryIcons[id] || '🎵';
+            return { id, label, icon, count };
+          })
+      ];
+
+      container.innerHTML = cats.map(c => {
+        const isActive = mainSbCurrentCat === c.id;
+        return `
+          <button 
+            onclick="selectMainSbCategory('${c.id}')"
+            class="px-3 py-1.5 rounded-xl font-bold transition flex-shrink-0 whitespace-nowrap text-xs flex items-center space-x-1.5 active:scale-95 ${
+              isActive 
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black' 
+                : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800/80 hover:border-slate-700'
+            }"
+          >
+            <span>${c.icon}</span>
+            <span>${c.label}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-slate-950/20 text-slate-950 font-extrabold' : 'bg-slate-800 text-slate-400'}">${c.count}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectMainSbCategory(cat) {
+      mainSbCurrentCat = cat;
+      renderMainSbCategories();
+      renderMainSbGrid();
+    }
+
+    function handleMainSbSearch(val) {
+      mainSbSearchQuery = (val || '').toLowerCase().trim();
+      const clearBtn = document.getElementById('main-sb-search-clear');
+      if (clearBtn) {
+        if (mainSbSearchQuery) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+      renderMainSbGrid();
+    }
+
+    function clearMainSbSearch() {
+      const input = document.getElementById('main-sb-search-input');
+      if (input) input.value = '';
+      mainSbSearchQuery = '';
+      const clearBtn = document.getElementById('main-sb-search-clear');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      renderMainSbGrid();
+    }
+
+    function renderMainSbFavorites() {
+      const container = document.getElementById('main-sb-favorites-grid');
+      const countLabel = document.getElementById('main-sb-fav-count');
+      if (!container) return;
+
+      const favSounds = Array.from(mainSbFavorites).map(id => mainSbSounds.find(s => s.id === id)).filter(Boolean);
+      if (countLabel) countLabel.innerText = `${favSounds.length} âm ghim`;
+
+      if (favSounds.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-4 text-center text-xs text-slate-500 italic bg-slate-950/60 rounded-xl border border-slate-800/60">
+            Chưa có âm thanh yêu thích nào. Bấm icon ngôi sao ⭐ ở các nút bên dưới để ghim phím tắt nhanh 1-9!
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = favSounds.map((sound, idx) => {
+        const hotkey = idx < 9 ? idx + 1 : null;
+        const isPlaying = mainSbActiveAudios.has(sound.id);
+        return `
+          <div class="relative group">
+            <button 
+              id="btn-main-fav-${sound.id}"
+              onclick="playMainSbSound('${sound.id}')"
+              class="w-full min-h-[74px] p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-150 active:scale-95 sb-touch-pad select-none ${
+                isPlaying 
+                  ? 'bg-gradient-to-br from-amber-500/25 to-slate-900 border-amber-400 text-amber-200 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/20' 
+                  : 'bg-slate-950 hover:bg-slate-800/90 border-slate-800 text-slate-200 hover:border-amber-500/50'
+              }"
+            >
+              <div class="flex items-center justify-between w-full mb-1">
+                ${hotkey ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-[10px] font-black text-amber-300 font-mono">[ ${hotkey} ]</span>` : '<span></span>'}
+                
+                <button 
+                  onclick="event.stopPropagation(); toggleMainSbFavorite('${sound.id}')"
+                  class="p-1 -mr-1 -mt-1 text-amber-400 hover:text-slate-400 transition"
+                  title="Bỏ ghim"
+                >
+                  <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400"></i>
+                </button>
+              </div>
+
+              <div>
+                <span class="font-bold text-xs line-clamp-1 block text-slate-100">${sound.title}</span>
+                <div class="flex items-center justify-between text-[9px] text-slate-400 mt-0.5">
+                  <span class="truncate">${sound.catLabel}</span>
+                  ${isPlaying ? '<span class="text-amber-400 font-bold animate-pulse">ĐANG PHÁT</span>' : ''}
+                </div>
+              </div>
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function renderMainSbGrid() {
+      const container = document.getElementById('main-sb-sounds-grid');
+      const emptyState = document.getElementById('main-sb-empty-state');
+      const countLabel = document.getElementById('main-sb-count-label');
+      const sectionTitle = document.getElementById('main-sb-section-title');
+      if (!container) return;
+
+      let filtered = mainSbSounds;
+
+      if (mainSbCurrentCat === 'favorites') {
+        filtered = filtered.filter(s => mainSbFavorites.has(s.id));
+        if (sectionTitle) sectionTitle.innerText = 'Danh Sách Âm Thanh Đã Ghim Yêu Thích';
+      } else if (mainSbCurrentCat !== 'all') {
+        filtered = filtered.filter(s => s.cat === mainSbCurrentCat);
+        if (sectionTitle) sectionTitle.innerText = mainSbCategories[mainSbCurrentCat] || 'Hiệu Ứng Âm Thanh';
+      } else {
+        if (sectionTitle) sectionTitle.innerText = 'Kho Toàn Bộ 183 Hiệu Ứng Âm Thanh';
+      }
+
+      if (mainSbSearchQuery) {
+        filtered = filtered.filter(s => 
+          s.title.toLowerCase().includes(mainSbSearchQuery) ||
+          s.id.toLowerCase().includes(mainSbSearchQuery) ||
+          (s.tags && s.tags.some(t => t.toLowerCase().includes(mainSbSearchQuery)))
+        );
+      }
+
+      if (countLabel) countLabel.innerText = `Đang hiển thị ${filtered.length} / ${mainSbSounds.length} âm`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+      }
+
+      if (emptyState) emptyState.classList.add('hidden');
+
+      if (mainSbViewMode === 'pad') {
+        // PAD / STREAM DECK VIEW
+        container.innerHTML = filtered.map(sound => {
+          const isFav = mainSbFavorites.has(sound.id);
+          const isPlaying = mainSbActiveAudios.has(sound.id);
+          return `
+            <div class="relative group">
+              <button 
+                id="btn-main-sound-${sound.id}"
+                onclick="playMainSbSound('${sound.id}')"
+                class="w-full min-h-[96px] sm:min-h-[104px] p-3 rounded-2xl border text-left flex flex-col justify-between transition-all duration-150 active:scale-95 sb-touch-pad select-none ${
+                  isPlaying 
+                    ? 'bg-gradient-to-br from-amber-950/80 via-slate-900 to-amber-950/40 border-amber-400 text-amber-100 ring-2 ring-amber-500/40 shadow-xl shadow-amber-500/20 scale-[1.02]' 
+                    : 'bg-slate-950 hover:bg-slate-800/90 border-slate-800 text-slate-200 hover:border-slate-700 hover:-translate-y-0.5'
+                }"
+              >
+                <!-- Card Header: Wave/Play & Fav Star -->
+                <div class="flex items-center justify-between w-full mb-1">
+                  ${
+                    isPlaying 
+                      ? `<div class="flex items-end space-x-0.5 h-4 text-amber-400">
+                          <span class="w-1 bg-amber-400 rounded-full sb-wave-1"></span>
+                          <span class="w-1 bg-amber-400 rounded-full sb-wave-2"></span>
+                          <span class="w-1 bg-amber-400 rounded-full sb-wave-3"></span>
+                          <span class="w-1 bg-amber-400 rounded-full sb-wave-4"></span>
+                         </div>`
+                      : `<span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center flex-shrink-0 group-hover:text-amber-400 transition">
+                          <i data-lucide="play" class="w-3 h-3 fill-current ml-0.5"></i>
+                         </span>`
+                  }
+                  
+                  <button 
+                    onclick="event.stopPropagation(); toggleMainSbFavorite('${sound.id}')"
+                    class="p-1.5 -mr-1.5 -mt-1.5 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-slate-800/60 transition"
+                    title="${isFav ? 'Bỏ ghim' : 'Ghim yêu thích'}"
+                  >
+                    <i data-lucide="star" class="w-3.5 h-3.5 ${isFav ? 'text-amber-400 fill-amber-400' : ''}"></i>
+                  </button>
+                </div>
+
+                <!-- Card Body: Sound Title & Category Tag -->
+                <div class="mt-1">
+                  <span class="font-bold text-xs sm:text-[13px] leading-tight text-slate-100 line-clamp-2 block group-hover:text-amber-300 transition">
+                    ${sound.title}
+                  </span>
+                  <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                    <span class="truncate">${sound.catLabel}</span>
+                    <span class="font-mono text-[9px] text-slate-600 hidden xs:inline">${sound.id}</span>
+                  </div>
+                </div>
+              </button>
+            </div>
+          `;
+        }).join('');
+      } else {
+        // COMPACT LIST VIEW
+        container.innerHTML = filtered.map(sound => {
+          const isFav = mainSbFavorites.has(sound.id);
+          const isPlaying = mainSbActiveAudios.has(sound.id);
+          return `
+            <div class="relative group">
+              <button 
+                id="btn-main-sound-${sound.id}"
+                onclick="playMainSbSound('${sound.id}')"
+                class="w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-all duration-150 active:scale-[0.98] sb-touch-pad select-none ${
+                  isPlaying 
+                    ? 'bg-amber-950/70 border-amber-400 text-amber-100 ring-1 ring-amber-500/40 shadow-md shadow-amber-500/20' 
+                    : 'bg-slate-950 hover:bg-slate-800/90 border-slate-800 text-slate-200 hover:border-slate-700'
+                }"
+              >
+                <div class="flex items-center space-x-2.5 min-w-0 flex-1">
+                  <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isPlaying ? 'bg-amber-500 text-slate-950 animate-pulse' : 'bg-slate-900 border border-slate-800 text-slate-400'}">
+                    <i data-lucide="${isPlaying ? 'volume-2' : 'play'}" class="w-3.5 h-3.5 fill-current ${isPlaying ? '' : 'ml-0.5'}"></i>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-xs truncate text-slate-100 group-hover:text-amber-300 transition">${sound.title}</div>
+                    <div class="text-[10px] text-slate-400 truncate flex items-center space-x-2">
+                      <span>${sound.catLabel}</span>
+                      <span class="font-mono text-[9px] text-slate-600">${sound.id}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onclick="event.stopPropagation(); toggleMainSbFavorite('${sound.id}')"
+                  class="p-1.5 text-slate-500 hover:text-amber-400 transition flex-shrink-0 ml-2"
+                  title="${isFav ? 'Bỏ ghim' : 'Ghim yêu thích'}"
+                >
+                  <i data-lucide="star" class="w-4 h-4 ${isFav ? 'text-amber-400 fill-amber-400' : ''}"></i>
+                </button>
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function toggleMainSbFavorite(id) {
+      if (mainSbFavorites.has(id)) {
+        mainSbFavorites.delete(id);
+      } else {
+        mainSbFavorites.add(id);
+      }
+      saveMainSbFavorites();
+      renderMainSbFavorites();
+      renderMainSbCategories();
+      renderMainSbGrid();
+    }
+
+    function playMainSbSound(id) {
+      const sound = mainSbSounds.find(s => s.id === id);
+      if (!sound) return;
+
+      // Haptic Vibration for tactile mobile feedback
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(15); } catch {}
+      }
+
+      if (mainSbActiveAudios.has(id)) {
+        const audio = mainSbActiveAudios.get(id);
+        audio.pause();
+        audio.currentTime = 0;
+        mainSbActiveAudios.delete(id);
+        updateMainSbPlayingUI();
+        renderMainSbGrid();
+        renderMainSbFavorites();
+        return;
+      }
+
+      if (mainSbSoloMode) {
+        stopMainSbSounds();
+      }
+
+      const audio = new Audio(sound.file);
+      audio.volume = mainSbMasterVolume;
+
+      audio.onplay = () => {
+        mainSbActiveAudios.set(id, audio);
+        updateMainSbPlayingUI(sound.title);
+        renderMainSbGrid();
+        renderMainSbFavorites();
+      };
+
+      audio.onended = () => {
+        mainSbActiveAudios.delete(id);
+        updateMainSbPlayingUI();
+        renderMainSbGrid();
+        renderMainSbFavorites();
+      };
+
+      audio.onerror = (e) => {
+        console.error('Audio play error:', e);
+        mainSbActiveAudios.delete(id);
+        updateMainSbPlayingUI();
+        renderMainSbGrid();
+        renderMainSbFavorites();
+      };
+
+      audio.play().catch(err => {
+        console.warn('Autoplay prevented:', err);
+      });
+    }
+
+    function stopMainSbSounds() {
+      // Haptic feedback
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(25); } catch {}
+      }
+
+      mainSbActiveAudios.forEach(audio => {
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+        } catch {}
+      });
+      mainSbActiveAudios.clear();
+      updateMainSbPlayingUI();
+      renderMainSbGrid();
+      renderMainSbFavorites();
+    }
+
+    function updateMainSbPlayingUI(latestTitle) {
+      const activeCount = mainSbActiveAudios.size;
+      const countLabel = document.getElementById('main-sb-active-playing-count');
+      if (countLabel) countLabel.innerText = `${activeCount} đang phát`;
+
+      // Master Stop button in top toolbar
+      const masterStopBtn = document.getElementById('main-sb-btn-stop');
+      if (masterStopBtn) {
+        if (activeCount > 0) {
+          masterStopBtn.className = "px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs flex items-center space-x-2 transition shadow-xl shadow-rose-600/40 animate-pulse active:scale-95 flex-shrink-0";
+          masterStopBtn.innerHTML = `
+            <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i>
+            <span>Dừng (${activeCount})</span>
+            <kbd class="hidden md:inline-block ml-1 px-1.5 py-0.5 bg-rose-700/80 rounded text-[9px] uppercase font-mono">Esc</kbd>
+          `;
+        } else {
+          masterStopBtn.className = "px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs flex items-center space-x-2 transition shadow-lg shadow-rose-600/20 active:scale-95 flex-shrink-0";
+          masterStopBtn.innerHTML = `
+            <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i>
+            <span>Dừng Tất Cả</span>
+            <kbd class="hidden md:inline-block ml-1 px-1.5 py-0.5 bg-rose-700/80 rounded text-[9px] uppercase font-mono">Esc</kbd>
+          `;
+        }
+      }
+
+      // Mobile Bottom Stream Deck Dock
+      const dockTitle = document.getElementById('mobile-dock-title');
+      const dockStatus = document.getElementById('mobile-dock-status');
+      const dockWave = document.getElementById('mobile-dock-wave');
+      const dockStopText = document.getElementById('mobile-dock-stop-text');
+      const dockStopBtn = document.getElementById('mobile-dock-btn-stop');
+
+      if (dockTitle && dockStatus && dockWave) {
+        if (activeCount > 0) {
+          if (latestTitle) dockTitle.innerText = latestTitle;
+          dockStatus.innerHTML = `<span class="text-amber-400 font-bold">${activeCount} âm đang phát...</span>`;
+          dockWave.innerHTML = `
+            <div class="flex items-end space-x-0.5 h-3.5 text-amber-400">
+              <span class="w-1 bg-amber-400 rounded-full sb-wave-1"></span>
+              <span class="w-1 bg-amber-400 rounded-full sb-wave-2"></span>
+              <span class="w-1 bg-amber-400 rounded-full sb-wave-3"></span>
+              <span class="w-1 bg-amber-400 rounded-full sb-wave-4"></span>
+            </div>
+          `;
+          if (dockStopText) dockStopText.innerText = `Dừng (${activeCount})`;
+          if (dockStopBtn) dockStopBtn.classList.add('animate-pulse');
+        } else {
+          dockTitle.innerText = 'Soundboard Streamer';
+          dockStatus.innerHTML = `<span class="text-emerald-400 font-semibold">${mainSbSounds.length} âm sẵn sàng</span>`;
+          dockWave.innerHTML = `<i data-lucide="music-2" class="w-4 h-4 text-amber-400"></i>`;
+          if (dockStopText) dockStopText.innerText = 'Dừng';
+          if (dockStopBtn) dockStopBtn.classList.remove('animate-pulse');
+        }
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function setMainSbVolume(val) {
+      mainSbMasterVolume = parseFloat(val);
+      if (mainSbMasterVolume > 0) {
+        mainSbIsMuted = false;
+        mainSbPreviousVolume = mainSbMasterVolume;
+      }
+      updateMainSbVolumeUI();
+    }
+
+    function toggleMainSbMute() {
+      if (mainSbIsMuted) {
+        mainSbMasterVolume = mainSbPreviousVolume > 0 ? mainSbPreviousVolume : 1.0;
+        mainSbIsMuted = false;
+      } else {
+        mainSbPreviousVolume = mainSbMasterVolume;
+        mainSbMasterVolume = 0;
+        mainSbIsMuted = true;
+      }
+      updateMainSbVolumeUI();
+    }
+
+    function updateMainSbVolumeUI() {
+      const slider = document.getElementById('main-sb-volume');
+      const label = document.getElementById('main-sb-volume-label');
+      const icon = document.getElementById('icon-sb-volume');
+
+      if (slider) slider.value = mainSbMasterVolume;
+      if (label) label.innerText = `${Math.round(mainSbMasterVolume * 100)}%`;
+
+      if (icon) {
+        if (mainSbMasterVolume === 0) {
+          icon.setAttribute('data-lucide', 'volume-x');
+        } else if (mainSbMasterVolume < 0.5) {
+          icon.setAttribute('data-lucide', 'volume-1');
+        } else {
+          icon.setAttribute('data-lucide', 'volume-2');
+        }
+      }
+
+      mainSbActiveAudios.forEach(audio => {
+        audio.volume = mainSbMasterVolume;
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function toggleMainSbSoloMode() {
+      mainSbSoloMode = !mainSbSoloMode;
+      const text = document.getElementById('main-sb-mode-text');
+      const btn = document.getElementById('main-sb-btn-mode');
+      const dockModeText = document.getElementById('mobile-dock-mode-text');
+      
+      if (text) text.innerText = mainSbSoloMode ? 'Phát Đơn (Solo)' : 'Chồng Âm';
+      if (dockModeText) dockModeText.innerText = mainSbSoloMode ? 'Đơn' : 'Chồng';
+
+      if (btn) {
+        if (mainSbSoloMode) {
+          btn.classList.add('border-purple-500', 'text-purple-300', 'bg-purple-950/40');
+        } else {
+          btn.classList.remove('border-purple-500', 'text-purple-300', 'bg-purple-950/40');
+        }
+      }
+    }
+
+    function checkAutoPlayGiftSound() {
+      const chk = document.getElementById('chk-auto-gift-sound');
+      if (chk && chk.checked) {
+        const giftSounds = ['applause-cheer', 'winpk', '10diem', 'phaobong'];
+        const randomSound = giftSounds[Math.floor(Math.random() * giftSounds.length)];
+        playMainSbSound(randomSound);
+      }
+    }
+
+    function checkAutoPlayFollowSound() {
+      const chk = document.getElementById('chk-auto-follow-sound');
+      if (chk && chk.checked) {
+        const followSounds = ['camonanh', 'thatim', 'tingting'];
+        const randomSound = followSounds[Math.floor(Math.random() * followSounds.length)];
+        playMainSbSound(randomSound);
+      }
+    }
+
+    function saveSbSettings() {
+      // settings saved in session
+    }
+
+    window.addEventListener('keydown', (e) => {
+      // Ignore if user is currently typing in an input or textarea
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        if (e.key === 'Escape' && document.activeElement.id === 'main-sb-search-input') {
+          clearMainSbSearch();
+          document.activeElement.blur();
+        }
+        return;
+      }
+
+      // Quick search focus with '/'
+      if (e.key === '/') {
+        e.preventDefault();
+        focusMainSbSearch();
+        return;
+      }
+
+      // Stop all sounds with Space or Escape
+      if (e.key === 'Escape' || e.code === 'Space') {
+        if (mainSbActiveAudios.size > 0) {
+          e.preventDefault();
+          stopMainSbSounds();
+        }
+        return;
+      }
+
+      // Numbers 1 to 9 trigger pinned favorite sounds
+      const num = parseInt(e.key);
+      if (!isNaN(num) && num >= 1 && num <= 9) {
+        const favArray = Array.from(mainSbFavorites);
+        if (favArray[num - 1]) {
+          e.preventDefault();
+          playMainSbSound(favArray[num - 1]);
+        }
+      }
+    });
+
+    /* ==========================================================================
        11. INITIALIZATION
        ========================================================================== */
     document.addEventListener('DOMContentLoaded', () => {
@@ -3113,7 +4371,13 @@
       populateVoices();
       initBlacklistUI();
       fetchCurrentUser();
+      loadMainSoundboard();
       window.addEventListener('click', () => unlockAudio(), { once: true });
+
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('tab') === 'soundboard') {
+        switchMainTab('soundboard');
+      }
     });
   </script>
 </body>

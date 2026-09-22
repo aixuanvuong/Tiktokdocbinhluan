@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 import crypto from 'crypto';
+import fs from 'fs';
 import { Server as SocketIOServer } from 'socket.io';
 import { createServer as createViteServer } from 'vite';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
@@ -850,6 +851,52 @@ async function startServer() {
       ? path.join(process.cwd(), 'dist', 'overlay.html')
       : path.join(process.cwd(), 'overlay.html');
     res.sendFile(filePath);
+  });
+
+  // Standalone Streamer Soundboard Pop-up Window
+  app.get(['/soundboard', '/soundboard.html'], (req, res) => {
+    const isProd = process.env.NODE_ENV === 'production';
+    const filePath = isProd
+      ? path.join(process.cwd(), 'dist', 'soundboard.html')
+      : path.join(process.cwd(), 'soundboard.html');
+    res.sendFile(filePath);
+  });
+
+  // Soundboard audio static files and API catalog
+  const publicSoundsPath = path.join(process.cwd(), 'public', 'sounds');
+  app.use('/sounds', express.static(publicSoundsPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.opus') || filePath.endsWith('.ogg')) {
+        res.setHeader('Content-Type', 'audio/ogg; codecs=opus');
+      }
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }));
+
+  app.get('/api/sounds', (req, res) => {
+    try {
+      const filePath = path.join(process.cwd(), 'public', 'sounds.json');
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, 'utf8');
+        res.setHeader('Content-Type', 'application/json');
+        return res.send(data);
+      }
+      // Fallback if sounds.json is missing
+      const files = fs.existsSync(publicSoundsPath) ? fs.readdirSync(publicSoundsPath) : [];
+      const soundItems = files.filter(f => f.endsWith('.opus')).map(f => ({
+        id: f.replace('.opus', ''),
+        title: f.replace('.opus', ''),
+        cat: 'meme',
+        catLabel: 'Hiệu ứng',
+        file: '/sounds/' + f,
+        tags: []
+      }));
+      res.json({ categories: { all: 'Tất Cả' }, sounds: soundItems });
+    } catch (e: any) {
+      console.error('[Soundboard API Error]:', e);
+      res.status(500).json({ error: 'Failed to retrieve sounds' });
+    }
   });
 
   if (process.env.NODE_ENV !== 'production') {

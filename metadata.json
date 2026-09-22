@@ -1,6 +1,6 @@
 {
   "name": "TikTok XV",
-  "description": "Đọc bình luận & Follow bằng giọng nói Trên live TikTok",
+  "description": "Đọc bình luận, Follow bằng giọng nói, OBS Overlay 3 khung và Soundboard 183 hiệu ứng âm thanh live TikTok",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
