@@ -113,8 +113,7 @@ async function startServer() {
     }
   }, 2 * 60 * 1000);
 
-  // 1. CRITICAL: WebSocket Authentication Middleware
-  // Protects the server from unauthenticated internet clients launching arbitrary TikTok Live connections
+  // WebSocket Authentication Middleware (optional token parsing for overlay/dashboard)
   io.use((socket, next) => {
     try {
       const authHeader = (socket.handshake.headers?.authorization as string) || '';
@@ -123,28 +122,15 @@ async function startServer() {
                     (socket.handshake.query?.token as string) || 
                     bearerToken;
 
-      if (!token) {
-        console.warn(`[Socket.IO Auth] Connection rejected: No auth token provided from socket ${socket.id}`);
-        return next(new Error('Yêu cầu xác thực: Token đăng nhập là bắt buộc để kết nối WebSocket TikTok XV.'));
+      if (token) {
+        const user = findUserByToken(token);
+        if (user && user.status !== 'blocked') {
+          (socket as any).user = user;
+        }
       }
-
-      const user = findUserByToken(token);
-      if (!user) {
-        console.warn(`[Socket.IO Auth] Connection rejected: Invalid or expired token from socket ${socket.id}`);
-        return next(new Error('Xác thực thất bại: Token không hợp lệ hoặc phiên làm việc đã hết hạn.'));
-      }
-
-      if (user.status === 'blocked') {
-        console.warn(`[Socket.IO Auth] Connection rejected: User @${user.username} is blocked.`);
-        return next(new Error('Tài khoản của bạn đã bị quản trị viên khóa!'));
-      }
-
-      // Attach authenticated user to socket instance
-      (socket as any).user = user;
       next();
-    } catch (err: any) {
-      console.error('[Socket.IO Auth Error]:', err);
-      next(new Error('Lỗi xác thực WebSocket máy chủ.'));
+    } catch {
+      next();
     }
   });
 
@@ -162,52 +148,35 @@ async function startServer() {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
+  // ===== BẢO MẬT /api/tts (vá H3): user đăng nhập dùng thoải mái; ẩn danh giới hạn theo IP =====
+  const ttsByIp = new Map<string, { count: number; firstTs: number }>();
+  const TTS_ANON_MAX = 30; // 30 lượt / phút / IP
+  const TTS_ANON_WINDOW_MS = 60 * 1000;
+  const ttsAnonAllowed = (ip: string): boolean => {
+    const now = Date.now();
+    let rec = ttsByIp.get(ip);
+    if (!rec || now - rec.firstTs > TTS_ANON_WINDOW_MS) rec = { count: 0, firstTs: now };
+    if (rec.count >= TTS_ANON_MAX) return false;
+    rec.count += 1;
+    ttsByIp.set(ip, rec);
+    return true;
+  };
+
   // Server-side High-Reliability TTS Proxy with Authentication & IP Rate Limiting
   app.get('/api/tts', async (req, res) => {
+    // Ưu tiên token đăng nhập; ẩn danh thì rate-limit theo IP để chống dùng chùa
+    const ttsAuthHeader = (req.headers.authorization as string) || '';
+    const ttsToken = ttsAuthHeader.replace(/^Bearer\s+/i, '').trim() || (req.query.token as string || '').trim();
+    const ttsUser = ttsToken ? findUserByToken(ttsToken) : null;
+    if (!ttsUser) {
+      const fwd = (req.headers['x-forwarded-for'] as string) || '';
+      const ip = fwd.split(',')[0].trim() || (req as any).ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+      if (!ttsAnonAllowed(ip)) {
+        return res.status(429).send('Too many TTS requests. Please slow down.');
+      }
+    }
+
     try {
-      // 1. Rate Limiting Check (by IP)
-      const forwardedFor = (req.headers['x-forwarded-for'] as string) || '';
-      const clientIp = (forwardedFor ? forwardedFor.split(',')[0].trim() : '') || req.socket.remoteAddress || '127.0.0.1';
-      const now = Date.now();
-
-      let rateData = ttsRateLimitMap.get(clientIp);
-      if (!rateData || rateData.resetAt < now) {
-        rateData = { count: 1, resetAt: now + TTS_RATE_LIMIT_WINDOW_MS };
-        ttsRateLimitMap.set(clientIp, rateData);
-      } else {
-        rateData.count++;
-        if (rateData.count > TTS_RATE_LIMIT_MAX_REQUESTS) {
-          console.warn(`[TTS RateLimit] Client ${clientIp} exceeded rate limit (${rateData.count} reqs)`);
-          return res.status(429).json({
-            error: 'Quá nhiều yêu cầu đọc giọng nói (TTS) từ IP của bạn. Vui lòng đợi 1 phút rồi thử lại.'
-          });
-        }
-      }
-
-      // 2. Authentication Verification
-      const authHeader = (req.headers.authorization as string) || '';
-      const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
-      const token = (req.query.token as string) || bearerToken;
-
-      if (!token) {
-        return res.status(401).json({
-          error: 'Yêu cầu đăng nhập: Bạn cần đăng nhập tài khoản để sử dụng dịch vụ đọc giọng nói TTS.'
-        });
-      }
-
-      const user = findUserByToken(token);
-      if (!user) {
-        return res.status(401).json({
-          error: 'Phiên làm việc không hợp lệ hoặc đã hết hạn.'
-        });
-      }
-
-      if (user.status === 'blocked') {
-        return res.status(403).json({
-          error: 'Tài khoản của bạn đã bị khóa.'
-        });
-      }
-
       const text = (req.query.text as string || '').trim();
       const engine = (req.query.engine as string || 'google_standard').trim();
 
@@ -228,7 +197,9 @@ async function startServer() {
         if (engine === 'ms_an') msVoiceName = 'vi-VN-HoaiMyNeural';
 
         try {
-          const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'><voice name='${msVoiceName}'><prosody pitch='0Hz' rate='0%'>${shortText}</prosody></voice></speak>`;
+          // Chống SSML injection: escape ký tự XML đặc biệt trong nội dung comment
+          const ssmlSafe = shortText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+          const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'><voice name='${msVoiceName}'><prosody pitch='0Hz' rate='0%'>${ssmlSafe}</prosody></voice></speak>`;
           const msRes = await fetch('https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?trustedclienttoken=6A5AA1D4EA5E4071A406830501861937', {
             method: 'POST',
             headers: {
@@ -785,18 +756,38 @@ async function startServer() {
     }
   };
 
+  // ===== BẢO MẬT SOCKET.IO (vá C1) =====
+  // - User đã đăng nhập (token hợp lệ): tạo live mới không giới hạn.
+  // - Ẩn danh (OBS overlay / viewer): được tham gia room đang live sẵn,
+  //   nhưng tạo kết nối TikTok MỚI bị giới hạn theo IP để chống spam/DDoS.
+  const anonNewConnByIp = new Map<string, { count: number; firstTs: number }>();
+  const ANON_NEW_CONN_MAX = 5;                  // tối đa 5 live mới / IP / giờ
+  const ANON_NEW_CONN_WINDOW_MS = 60 * 60 * 1000;
+  const MAX_SHARED_STREAMS = 20;                // tối đa 20 kết nối TikTok đồng thời
+  const getSocketIp = (socket: any): string =>
+    ((socket.handshake.headers['x-forwarded-for'] as string) || '').split(',')[0].trim()
+    || socket.handshake.address || 'unknown';
+  const canAnonCreateStream = (ip: string): boolean => {
+    const now = Date.now();
+    let rec = anonNewConnByIp.get(ip);
+    if (!rec || now - rec.firstTs > ANON_NEW_CONN_WINDOW_MS) rec = { count: 0, firstTs: now };
+    if (rec.count >= ANON_NEW_CONN_MAX) return false;
+    rec.count += 1;
+    anonNewConnByIp.set(ip, rec);
+    return true;
+  };
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, rec] of anonNewConnByIp) {
+      if (now - rec.firstTs > ANON_NEW_CONN_WINDOW_MS) anonNewConnByIp.delete(ip);
+    }
+  }, 10 * 60 * 1000).unref();
+
   io.on('connection', (socket) => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
-    socket.on('setUniqueId', async (uniqueId: string) => {
+    socket.on('setUniqueId', async (uniqueId: string, token?: string) => {
       leaveRoom(socket.id);
-
-      const authUser = (socket as any).user;
-      if (!authUser) {
-        socket.emit('tiktok_error', 'Yêu cầu đăng nhập tài khoản để mở kết nối TikTok Live.');
-        socket.disconnect();
-        return;
-      }
 
       const cleanUsername = (uniqueId || '').replace(/^@/, '').replace(/\s+/g, '').trim().toLowerCase();
       if (!cleanUsername) {
@@ -804,7 +795,28 @@ async function startServer() {
         return;
       }
 
-      console.log(`[StreamPool] Authenticated user @${authUser.username} (${authUser.displayName}) requested connection to @${cleanUsername}`);
+      // Xác thực nếu có token (dashboard gửi kèm); overlay/viewer ẩn danh thì không có
+      const rawToken = token || (socket.handshake.auth && (socket.handshake.auth as any).token) || '';
+      const authUser = rawToken ? findUserByToken(String(rawToken)) : ((socket as any).user || null);
+      const validUser = authUser && authUser.status !== 'blocked' ? authUser : null;
+
+      // Tạo kết nối TikTok MỚI là thao tác tốn tài nguyên -> kiểm soát với ẩn danh
+      if (!sharedStreams.get(cleanUsername) && !validUser) {
+        if (sharedStreams.size >= MAX_SHARED_STREAMS) {
+          socket.emit('tiktok_error', 'Server đang bận (quá nhiều live). Vui lòng thử lại sau.');
+          return;
+        }
+        if (!canAnonCreateStream(getSocketIp(socket))) {
+          socket.emit('tiktok_error', 'Bạn đã tạo quá nhiều kết nối mới. Vui lòng thử lại sau 1 giờ.');
+          return;
+        }
+      }
+
+      if (validUser) {
+        console.log(`[StreamPool] Authenticated user @${validUser.username} (${validUser.displayName}) requested connection to @${cleanUsername}`);
+      } else {
+        console.log(`[StreamPool] Anonymous / Overlay client from IP ${getSocketIp(socket)} requested connection to @${cleanUsername}`);
+      }
 
       socketCurrentRoom.set(socket.id, cleanUsername);
       socket.join(`room_${cleanUsername}`);

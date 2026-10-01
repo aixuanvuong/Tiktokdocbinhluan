@@ -51,7 +51,9 @@ function loadDbFromDisk(): UserRecord[] {
     const hasAdmin = users.some(u => u.role === 'admin');
     if (!hasAdmin) {
       const salt = crypto.randomBytes(16).toString('hex');
-      const hash = hashPassword('admin123', salt);
+      // Không dùng mật khẩu mặc định: sinh ngẫu nhiên, chỉ in ra console 1 lần duy nhất
+      const initialPassword = crypto.randomBytes(12).toString('hex');
+      const hash = hashPassword(initialPassword, salt);
       const defaultAdmin: UserRecord = {
         username: 'admin',
         displayName: 'Quản Trị Viên',
@@ -65,6 +67,11 @@ function loadDbFromDisk(): UserRecord[] {
       };
       users.push(defaultAdmin);
       fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2), 'utf-8');
+      console.log('============================================================');
+      console.log('[DB] Đã tạo tài khoản admin khởi tạo: admin');
+      console.log(`[DB] Mật khẩu khởi tạo (CHỈ HIỆN 1 LẦN): ${initialPassword}`);
+      console.log('[DB] Hãy đăng nhập và đổi mật khẩu ngay lập tức!');
+      console.log('============================================================');
     } else {
       // Check existing admin accounts: if still using default 'admin123' password, force change password!
       let needsSave = false;

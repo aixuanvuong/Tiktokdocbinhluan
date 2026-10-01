@@ -321,7 +321,7 @@
       const bubbleId = 'chat-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
       const nickname = escapeHtml(data.nickname || 'Khán giả');
       const comment = escapeHtml(data.comment || '');
-      const avatarUrl = data.profilePictureUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces';
+      const avatarUrl = escapeHtml(data.profilePictureUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces');
 
       // Font size classes
       let fontClass = 'text-sm';
@@ -396,7 +396,7 @@
       const giftName = escapeHtml(data.giftName || 'Quà VIP');
       const count = data.giftCount || 1;
       const diamondCount = data.diamondCount || 0;
-      const avatarUrl = data.profilePictureUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop';
+      const avatarUrl = escapeHtml(data.profilePictureUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop');
       const giftImg = data.giftPictureUrl || 'https://cdn-icons-png.flaticon.com/512/8364/8364673.png';
 
       const alertEl = document.createElement('div');
@@ -464,7 +464,7 @@
       hideTip();
       const alertId = 'follow-' + Date.now();
       const nickname = escapeHtml(data.nickname || 'Bạn mới');
-      const avatarUrl = data.profilePictureUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop';
+      const avatarUrl = escapeHtml(data.profilePictureUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop');
 
       const alertEl = document.createElement('div');
       alertEl.id = alertId;
