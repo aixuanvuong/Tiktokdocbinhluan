@@ -245,7 +245,9 @@ change_domain() {
 update_app() {
     show_header
     echo -e "${CYAN}🚀 ĐANG CẬP NHẬT PHIÊN BẢN MỚI TỪ GITHUB:${NC}\n"
-    cd "$APP_DIR" && chmod +x update.sh && ./update.sh
+    cd "$APP_DIR"
+    git stash 2>/dev/null || true
+    chmod +x update.sh && ./update.sh
     read -p "Nhấn [Enter] để quay lại menu..."
     show_menu
 }

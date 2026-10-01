@@ -26,6 +26,9 @@ if [ -f "data/db.json" ]; then
     mv -f data/db.json data/db.json.temp_backup
 fi
 
+# Tự động stash các thay đổi cục bộ không cố ý để tránh xung đột git pull
+git stash 2>/dev/null || true
+
 # Fetch and pull cleanly
 git fetch origin main || git fetch || true
 git pull origin main || git pull || true
