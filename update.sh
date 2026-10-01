@@ -16,7 +16,26 @@ echo -e "${CYAN}======================================================${NC}"
 
 # 1. Pull latest code from GitHub
 echo -e "\n${YELLOW}👉 [1/4] Đang kéo mã nguồn mới nhất từ GitHub (git pull)...${NC}"
-git pull origin main || git pull
+
+# Backup & temporarily move local db.json to prevent git merge conflicts
+HAS_LOCAL_DB=false
+if [ -f "data/db.json" ]; then
+    HAS_LOCAL_DB=true
+    mkdir -p .backup
+    cp -f data/db.json .backup/db.json.bak.$(date +%s)
+    mv -f data/db.json data/db.json.temp_backup
+fi
+
+# Fetch and pull cleanly
+git fetch origin main || git fetch || true
+git pull origin main || git pull || true
+
+# Restore local database so users and passwords are preserved
+if [ "$HAS_LOCAL_DB" = true ] && [ -f "data/db.json.temp_backup" ]; then
+    echo -e "${GREEN}💾 Khôi phục nguyên vẹn cơ sở dữ liệu người dùng (data/db.json)...${NC}"
+    mkdir -p data
+    mv -f data/db.json.temp_backup data/db.json
+fi
 
 # 2. Update NPM Dependencies
 echo -e "\n${YELLOW}👉 [2/4] Đang cập nhật gói thư viện (npm install)...${NC}"
