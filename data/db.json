@@ -1,0 +1,14 @@
+[
+  {
+    "username": "admin",
+    "displayName": "Quản Trị Viên",
+    "passwordHash": "7fd5dc356afc11551b9d12be733db56f052ad766bb86af477f4d5d24d31939dfdcc553d9af972e0f234d00a099d7615782590d71cc55e9104e2938aeb5dd4c61",
+    "salt": "8bd2ec6cb1b5e2d53246397f149a4778",
+    "role": "admin",
+    "status": "active",
+    "savedTikTokIds": [],
+    "createdAt": "2026-10-01T16:09:52.673Z",
+    "mustChangePassword": true,
+    "token": "a4a5d90306154a00603c9325df5f48fcf125d884296e4980787d27e0420b9871"
+  }
+]

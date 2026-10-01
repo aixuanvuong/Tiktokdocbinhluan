@@ -98,6 +98,56 @@ async function startServer() {
 
   const PORT = 3000;
 
+  // Rate Limiter Memory Store for /api/tts (Sliding window by IP & Token)
+  const ttsRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+  const TTS_RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+  const TTS_RATE_LIMIT_MAX_REQUESTS = 60; // Max 60 requests/minute per client
+
+  // Periodic cleanup of expired rate limit entries
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, data] of ttsRateLimitMap.entries()) {
+      if (data.resetAt < now) {
+        ttsRateLimitMap.delete(key);
+      }
+    }
+  }, 2 * 60 * 1000);
+
+  // 1. CRITICAL: WebSocket Authentication Middleware
+  // Protects the server from unauthenticated internet clients launching arbitrary TikTok Live connections
+  io.use((socket, next) => {
+    try {
+      const authHeader = (socket.handshake.headers?.authorization as string) || '';
+      const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+      const token = (socket.handshake.auth?.token as string) || 
+                    (socket.handshake.query?.token as string) || 
+                    bearerToken;
+
+      if (!token) {
+        console.warn(`[Socket.IO Auth] Connection rejected: No auth token provided from socket ${socket.id}`);
+        return next(new Error('Yêu cầu xác thực: Token đăng nhập là bắt buộc để kết nối WebSocket TikTok XV.'));
+      }
+
+      const user = findUserByToken(token);
+      if (!user) {
+        console.warn(`[Socket.IO Auth] Connection rejected: Invalid or expired token from socket ${socket.id}`);
+        return next(new Error('Xác thực thất bại: Token không hợp lệ hoặc phiên làm việc đã hết hạn.'));
+      }
+
+      if (user.status === 'blocked') {
+        console.warn(`[Socket.IO Auth] Connection rejected: User @${user.username} is blocked.`);
+        return next(new Error('Tài khoản của bạn đã bị quản trị viên khóa!'));
+      }
+
+      // Attach authenticated user to socket instance
+      (socket as any).user = user;
+      next();
+    } catch (err: any) {
+      console.error('[Socket.IO Auth Error]:', err);
+      next(new Error('Lỗi xác thực WebSocket máy chủ.'));
+    }
+  });
+
   app.use(express.json({ limit: '1mb' }));
 
   // Static assets caching header for production/dist performance
@@ -112,9 +162,52 @@ async function startServer() {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
-  // Server-side High-Reliability TTS Proxy with Native Microsoft Edge & Google Support
+  // Server-side High-Reliability TTS Proxy with Authentication & IP Rate Limiting
   app.get('/api/tts', async (req, res) => {
     try {
+      // 1. Rate Limiting Check (by IP)
+      const forwardedFor = (req.headers['x-forwarded-for'] as string) || '';
+      const clientIp = (forwardedFor ? forwardedFor.split(',')[0].trim() : '') || req.socket.remoteAddress || '127.0.0.1';
+      const now = Date.now();
+
+      let rateData = ttsRateLimitMap.get(clientIp);
+      if (!rateData || rateData.resetAt < now) {
+        rateData = { count: 1, resetAt: now + TTS_RATE_LIMIT_WINDOW_MS };
+        ttsRateLimitMap.set(clientIp, rateData);
+      } else {
+        rateData.count++;
+        if (rateData.count > TTS_RATE_LIMIT_MAX_REQUESTS) {
+          console.warn(`[TTS RateLimit] Client ${clientIp} exceeded rate limit (${rateData.count} reqs)`);
+          return res.status(429).json({
+            error: 'Quá nhiều yêu cầu đọc giọng nói (TTS) từ IP của bạn. Vui lòng đợi 1 phút rồi thử lại.'
+          });
+        }
+      }
+
+      // 2. Authentication Verification
+      const authHeader = (req.headers.authorization as string) || '';
+      const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+      const token = (req.query.token as string) || bearerToken;
+
+      if (!token) {
+        return res.status(401).json({
+          error: 'Yêu cầu đăng nhập: Bạn cần đăng nhập tài khoản để sử dụng dịch vụ đọc giọng nói TTS.'
+        });
+      }
+
+      const user = findUserByToken(token);
+      if (!user) {
+        return res.status(401).json({
+          error: 'Phiên làm việc không hợp lệ hoặc đã hết hạn.'
+        });
+      }
+
+      if (user.status === 'blocked') {
+        return res.status(403).json({
+          error: 'Tài khoản của bạn đã bị khóa.'
+        });
+      }
+
       const text = (req.query.text as string || '').trim();
       const engine = (req.query.engine as string || 'google_standard').trim();
 
@@ -353,7 +446,8 @@ async function startServer() {
           role: user.role,
           status: user.status,
           savedTikTokIds: user.savedTikTokIds,
-          autoStartSystem: user.autoStartSystem || false
+          autoStartSystem: user.autoStartSystem || false,
+          mustChangePassword: user.mustChangePassword || false
         }
       });
     } catch (err: any) {
@@ -373,9 +467,62 @@ async function startServer() {
         role: user.role,
         status: user.status,
         savedTikTokIds: user.savedTikTokIds,
-        autoStartSystem: user.autoStartSystem || false
+        autoStartSystem: user.autoStartSystem || false,
+        mustChangePassword: user.mustChangePassword || false
       }
     });
+  });
+
+  // 3b. Force Change Default Password (required for initial admin/admin123)
+  app.post('/api/auth/change-default-password', authMiddleware, (req: any, res) => {
+    try {
+      const { newPassword, confirmPassword } = req.body || {};
+
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+        return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự để bảo đảm an toàn.' });
+      }
+
+      const cleanPwd = newPassword.trim().toLowerCase();
+      if (cleanPwd === 'admin123' || cleanPwd === 'admin' || cleanPwd === '123456') {
+        return res.status(400).json({ error: 'Không được đặt mật khẩu trùng với mật khẩu mặc định hoặc quá dễ đoán. Vui lòng chọn mật khẩu mới mạnh hơn!' });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ error: 'Xác nhận mật khẩu mới không trùng khớp.' });
+      }
+
+      const users = getUsers();
+      const uIndex = users.findIndex(u => u.username.toLowerCase() === req.user.username.toLowerCase());
+      if (uIndex === -1) {
+        return res.status(404).json({ error: 'Không tìm thấy thông tin tài khoản.' });
+      }
+
+      const newSalt = crypto.randomBytes(16).toString('hex');
+      const newHash = hashPassword(newPassword, newSalt);
+      users[uIndex].salt = newSalt;
+      users[uIndex].passwordHash = newHash;
+      users[uIndex].mustChangePassword = false;
+      saveUsers(users);
+
+      console.log(`[Security] Default password successfully changed for user @${users[uIndex].username}`);
+
+      res.json({
+        success: true,
+        message: 'Đổi mật khẩu thành công! Tài khoản của bạn đã được bảo vệ.',
+        user: {
+          username: users[uIndex].username,
+          displayName: users[uIndex].displayName,
+          role: users[uIndex].role,
+          status: users[uIndex].status,
+          savedTikTokIds: users[uIndex].savedTikTokIds,
+          autoStartSystem: users[uIndex].autoStartSystem || false,
+          mustChangePassword: false
+        }
+      });
+    } catch (err: any) {
+      console.error('Change default password error:', err);
+      res.status(500).json({ error: 'Lỗi máy chủ khi đổi mật khẩu mặc định.' });
+    }
   });
 
   // 4. Save or Remove TikTok ID in User's Private Space
@@ -462,6 +609,7 @@ async function startServer() {
         const newHash = hashPassword(newPassword, newSalt);
         user.salt = newSalt;
         user.passwordHash = newHash;
+        user.mustChangePassword = false;
       }
 
       saveUsers(users);
@@ -475,7 +623,8 @@ async function startServer() {
           role: user.role,
           status: user.status,
           savedTikTokIds: user.savedTikTokIds,
-          autoStartSystem: user.autoStartSystem || false
+          autoStartSystem: user.autoStartSystem || false,
+          mustChangePassword: user.mustChangePassword || false
         }
       });
     } catch (err: any) {
@@ -642,11 +791,20 @@ async function startServer() {
     socket.on('setUniqueId', async (uniqueId: string) => {
       leaveRoom(socket.id);
 
+      const authUser = (socket as any).user;
+      if (!authUser) {
+        socket.emit('tiktok_error', 'Yêu cầu đăng nhập tài khoản để mở kết nối TikTok Live.');
+        socket.disconnect();
+        return;
+      }
+
       const cleanUsername = (uniqueId || '').replace(/^@/, '').replace(/\s+/g, '').trim().toLowerCase();
       if (!cleanUsername) {
         socket.emit('tiktok_error', 'Vui lòng nhập TikTok Unique ID hợp lệ.');
         return;
       }
+
+      console.log(`[StreamPool] Authenticated user @${authUser.username} (${authUser.displayName}) requested connection to @${cleanUsername}`);
 
       socketCurrentRoom.set(socket.id, cleanUsername);
       socket.join(`room_${cleanUsername}`);

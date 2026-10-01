@@ -13,6 +13,7 @@ export interface UserRecord {
   createdAt: string;
   token?: string;
   autoStartSystem?: boolean; // Auto-start TikTok XV live connection on system launch
+  mustChangePassword?: boolean; // Force password change on first login if default credentials
 }
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -59,10 +60,26 @@ function loadDbFromDisk(): UserRecord[] {
         role: 'admin',
         status: 'active',
         savedTikTokIds: [],
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        mustChangePassword: true
       };
       users.push(defaultAdmin);
       fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2), 'utf-8');
+    } else {
+      // Check existing admin accounts: if still using default 'admin123' password, force change password!
+      let needsSave = false;
+      users.forEach(u => {
+        if (u.role === 'admin' && (u.mustChangePassword === undefined || u.mustChangePassword === true)) {
+          const isDefaultPassword = hashPassword('admin123', u.salt) === u.passwordHash;
+          if (isDefaultPassword) {
+            u.mustChangePassword = true;
+            needsSave = true;
+          }
+        }
+      });
+      if (needsSave) {
+        fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2), 'utf-8');
+      }
     }
 
     return users;

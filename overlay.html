@@ -213,6 +213,7 @@
 
     const config = {
       id: (params.get('id') || params.get('user') || '').replace(/^@/, '').trim().toLowerCase(),
+      token: params.get('token') || (typeof localStorage !== 'undefined' ? localStorage.getItem('tiktokxv_token') || '' : ''),
       mode: initialMode.toLowerCase(), // 'chat' | 'gift' | 'follow' | 'all'
       theme: params.get('theme') || 'transparent',
       fontSize: params.get('fontSize') || 'md',
@@ -303,7 +304,8 @@
     function playAlertAudio(text) {
       if (!config.sound || !text) return;
       try {
-        const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}&engine=ms_hoaimy`);
+        const tokenQuery = config.token ? `&token=${encodeURIComponent(config.token)}` : '';
+        const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}&engine=ms_hoaimy${tokenQuery}`);
         audio.volume = 0.85;
         audio.play().catch(() => {});
       } catch (e) {}
@@ -498,10 +500,17 @@
        ========================================================================== */
     function initSocket() {
       state.socket = io({
+        auth: { token: config.token },
+        query: { token: config.token },
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 2000,
         reconnectionAttempts: 100
+      });
+
+      state.socket.on('connect_error', (err) => {
+        console.warn('[OBS Overlay] Socket connect error:', err);
+        updateStatus(false, 'Lỗi kết nối: ' + (err.message || 'Chưa xác thực'));
       });
 
       state.socket.on('connect', () => {
